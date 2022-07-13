@@ -20,6 +20,13 @@ const rowcss = css`
 		margin-bottom: 5px;
 	}
 
+	strong {
+		color: var(--font-color);
+
+		font-size: 32px;
+		text-align: center;
+	}
+
 	span {
 		display: flex;
 		flex-direction: row;
@@ -73,10 +80,20 @@ class FeedUnreadRow extends Component {
 	}
 
 	render(props, state) {
+		let data = props.data
+		if (data.length > 5) {
+			data = []
+			for (let i = 0; i < 3; i++) {
+				data[i] = props.data[i]
+			}
+			data.push(null)
+			data.push(props.data[props.data.length - 1])
+		}
+
 		return html`
 			<div ref=${this.root} class=${rowcss}>
 				<h4>${props.data[0].FeedName}</h4>
-				${props.data.map(item => html`
+				${data.map(item => item === null ? html`<strong>\u00B7\u00B7\u00B7</strong>` : html`
 					<span
 						key=${item.ID}
 						onread=${() => this.setState(state => ({read: {...state.read, [item.ID]: true}}))}
