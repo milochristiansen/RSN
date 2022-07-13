@@ -17,4 +17,4 @@ WORKDIR /app
 
 COPY --from=build-go /app/server.bin .
 
-ENTRYPOINT ["server.bin"]
+ENTRYPOINT ["/app/server.bin"]
