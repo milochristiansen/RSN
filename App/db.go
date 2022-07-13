@@ -197,7 +197,7 @@ var Queries = map[string]*queryHolder{
 		select a.ID, a.Title, a.URL, fn.Name, fn.Feed, a.Published, rf.ReadTime from Articles a
 		inner join Subscribed fn on fn.Feed = a.Feed and fn.User = ?1
 		inner join ReadFlags rf on rf.Article = a.ID and rf.User = ?1 
-		order by rf.ReadTime limit 25;
+		order by rf.ReadTime desc limit 25;
 	`, nil},
 }
 
