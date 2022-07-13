@@ -26,18 +26,20 @@ class AuthProvider extends Component {
 		})
 			.then(r => {
 				if (!r.ok) {
-					throw new Error("Request failed.")
+					if (r.status != 403) {
+						// Try, try again.
+						setTimeout(() => this.refresh(), 5000)
+						throw new Error("Request failed, retrying in 5s.")
+					}
+					this.setState({auth: {ok: false, refresh: this.refresh, whoami: null}})
+					localStorage.setItem('whoami', "")
+					throw new Error("Login invalid.")
 				}
 				return r.json()
 			})
 			.then(whoami => {
 				this.setState({auth: {ok: true, refresh: this.refresh, whoami: whoami}})
 				localStorage.setItem('whoami', JSON.stringify(whoami))
-			})
-			.catch(err => {
-				console.log(err)
-				this.setState({auth: {ok: false, refresh: this.refresh, whoami: null}})
-				localStorage.setItem('whoami', "")
 			})
 	}
 
