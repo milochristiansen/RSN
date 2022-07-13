@@ -38,13 +38,15 @@
 			"preact/devtools": "https://unpkg.com/preact@10.8.2/devtools/dist/devtools.mjs",
 
 			"preact-router": "https://unpkg.com/preact-router@4.0.1/dist/preact-router.module.js?module",
-			"preact-router/match": "https://unpkg.com/preact-router@4.0.1/match/index.module.js?module",
 
 			"nanoid": "https://unpkg.com/nanoid@3.1.23/nanoid.js?module",
 
 			"https://unpkg.com/preact@%3E=10/hooks?module": "https://unpkg.com/preact@10.8.2/hooks/dist/hooks.mjs",
 			"https://unpkg.com/preact@latest?module": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module",
-			"https://unpkg.com/preact@%3E=10?module": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module"
+			"https://unpkg.com/preact@%3E=10?module": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module",
+
+			"preact-router@latest?module": "https://unpkg.com/preact-router@4.0.1/dist/preact-router.module.js?module",
+			"preact-router@4.0.1?module": "https://unpkg.com/preact-router@4.0.1/dist/preact-router.module.js?module"
 		}}
 		</script>
 	</head>
@@ -55,7 +57,6 @@
 		import { html, css, render } from "/header.js"
 
 		import { Router } from "preact-router"
-		import Match from "preact-router/match"
 		import { lazy, Suspense } from "preact/compat"
 
 		import { AuthProvider, AuthConsumer } from '/components/Auth.js'
@@ -232,6 +233,11 @@
 			}
 		`
 
+		// Needed for a hack later.
+		function PropWrapper(props) {
+			return props.children(props)
+		}
+
 		const Page404 = lazy(() => import('/pages/404.js'))
 		const LoginLanding = lazy(() => import('/pages/LoginLanding.js'))
 		const Unread = lazy(() => import('/pages/Unread.js'))
@@ -282,8 +288,17 @@
 							<${Feeds} />
 						<//>
 
-						<${Suspense} path="/read/feed/:id" fallback="${html`<h1>loading...</h1>`}">
-							<${FeedDetails} />
+						<!-- This router is shit. It is very light weight and simple, but it is still shit.
+						This little hack is needed to get the props past Suspense. There doesn't seem to be
+						another way to do it. -->
+						<${PropWrapper} path="/read/feed/:id">
+							${props => {
+								return html`
+									<${Suspense} fallback="${html`<h1>loading...</h1>`}">
+										<${FeedDetails} id=${props.id} />
+									<//>
+								`
+							}}
 						<//>
 
 						<${Suspense} default fallback="${html`<h1>loading...</h1>`}">
