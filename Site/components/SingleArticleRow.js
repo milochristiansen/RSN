@@ -38,8 +38,8 @@ class SingleArticleRow extends Component {
 		return html`
 			<div
 				key=${props.data.ID}
-				onread=${() => this.setState(state => ({read: false}))}
-				onunread=${() => this.setState(state => ({read: true}))}
+				onread=${() => this.setState(state => ({read: true}))}
+				onunread=${() => this.setState(state => ({read: false}))}
 				class=${rowcss}
 			>
 				<a
