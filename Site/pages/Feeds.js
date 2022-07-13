@@ -34,7 +34,6 @@ class Feeds extends AuthedComponent {
 				if (!r.ok) {
 					throw new Error("Request failed.")
 				}
-				console.log("Refreshed.")
 				return r.json()
 			})
 			.then(data => {
