@@ -1,0 +1,9 @@
+
+# Sublime stuff
+*.sublime-workspace
+*.sublime-project
+
+# Key files
+*.keys
+keys.go
+*.pem

@@ -1,0 +1,29 @@
+{
+	"name": "Really Simple Notifier",
+	"short_name": "RSN",
+	"description": "A simple and easy to use RSS notifier.",
+	"icons": [
+		{
+			"src": "/assets/favicon.svg",
+			"sizes": "128x128",
+			"type": "image/svg+xml",
+			"purpose": "any"
+		},
+		{
+			"src": "/assets/round.svg",
+			"sizes": "512x512",
+			"type": "image/svg+xml",
+			"purpose": "any maskable"
+		},
+		{
+			"src": "/assets/splash.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "maskable"
+		}
+	],
+	"start_url": "/index.html",
+	"display": "fullscreen",
+	"theme_color": "#ffff00",
+	"background_color": "#000000"
+} 

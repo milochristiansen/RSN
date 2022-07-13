@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+		<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+		
+		<link rel="manifest" href="/app.webmanifest">
+		<meta name="theme-color" content="#ffff00"/>
+
+		<meta name="description" content="A simple and easy to use RSS notifier. Track all your feeds seamlessly across devices and save battery and bandwidth by only checking one place!">
+
+		<title>RSN - Really Simple Notifier</title>
+
+		<!--
+		Blink > Webkit, always, and if you must use Gecko at least try to make them keep up.
+
+		Remove this the very second the slowpokes catch up. Don't even think about supporting IE or non-Blink Edge.
+		-->
+		<script async src="https://unpkg.com/es-module-shims@0.12.1/dist/es-module-shims.js"></script>
+
+		<!--
+		The last two mappings here fix a issue with preact module dependencies.
+		I don't know why the imports were done the way they were, but it breaks stuff.
+
+		Mapping them here stops things from breaking and makes it so that there are no 302s and
+		possible multiple copies of things.
+		-->
+		<script type="importmap">
+		{"imports": {
+			"htm": "https://unpkg.com/htm@3.0.4/dist/htm.module.js?module",
+			"csz": "https://unpkg.com/csz@1.2.0/index.js?module",
+
+			"preact": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module",
+			"preact/compat": "https://unpkg.com/preact@10.8.2/compat/dist/compat.mjs",
+			"preact/hooks": "https://unpkg.com/preact@10.8.2/hooks/dist/hooks.mjs",
+			"preact/debug": "https://unpkg.com/preact@10.8.2/debug/dist/debug.mjs",
+			"preact/devtools": "https://unpkg.com/preact@10.8.2/devtools/dist/devtools.mjs",
+
+			"preact-router": "https://unpkg.com/preact-router@4.0.1/dist/preact-router.module.js?module",
+			"preact-router/match": "https://unpkg.com/preact-router@4.0.1/match/index.module.js?module",
+
+			"nanoid": "https://unpkg.com/nanoid@3.1.23/nanoid.js?module",
+
+			"https://unpkg.com/preact@%3E=10/hooks?module": "https://unpkg.com/preact@10.8.2/hooks/dist/hooks.mjs",
+			"https://unpkg.com/preact@latest?module": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module",
+			"https://unpkg.com/preact@%3E=10?module": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module"
+		}}
+		</script>
+	</head>
+	<body>
+		<script type="module">
+		import "preact/debug"
+
+		import { html, css, render } from "/header.js"
+
+		import { Router } from "preact-router"
+		import Match from "preact-router/match"
+		import { lazy, Suspense } from "preact/compat"
+
+		import { AuthProvider, AuthConsumer } from '/components/Auth.js'
+		import LoginLogoutLink from '/components/LoginLogoutLink.js'
+
+		import { ThemeProvider, ThemeConsumer } from '/components/Theme.js'
+
+		import AddFeed from "/components/AddFeed.js"
+
+		import Main from '/pages/Main.js'
+
+		// Handle max width properly.
+		window.addEventListener("resize", () => {
+			document.documentElement.style.setProperty("--window-width", window.innerWidth + "px");
+		});
+
+		css`
+			:global(html) {
+				min-height: 100vh;
+
+				--page-max-width: 1200px;
+				--page-width: min(var(--window-width), 1200px);
+
+				--primary-color: #302ae6;
+				--secondary-color: #536390;
+				--font-color: #424242;
+				--bg-color: #ffffff;
+				--heading-color: #292922;
+				--on-color: #22bb22;
+				--off-color: #536390;
+				--warning-color: #ff2222;
+			}
+
+			:global(html)[data-theme="dark"] {
+				--primary-color: #9a97f3;
+				--secondary-color: #818cab;
+				--font-color: #e1e1ff;
+				--bg-color: #161625;
+				--heading-color: #818cab;
+				--on-color: #22bb22;
+				--off-color: #818cab;
+				--warning-color: #f56329;
+			}
+
+			:global(body) {
+				max-width: var(--page-max-width);
+				min-height: 100vh;
+
+				margin: 0 auto;
+				float: none;
+
+				display: flex;
+				flex-direction: column;
+
+				background-color: var(--bg-color);
+			}
+
+			:global(*) {
+				box-sizing: border-box;
+			}
+
+			:global(a) {
+				color: var(--font-color);
+			}
+
+			:global(h1),
+			:global(h2),
+			:global(h3),
+			:global(h4) {
+				color: var(--heading-color);
+			}
+
+			:global(p),
+			:global(span) {
+				color: var(--font-color);
+			}
+
+			:global(input),
+			:global(button) {
+				border-radius: 5px;
+				border-style: outset;
+				border-width: 3px;
+				border-color: var(--secondary-color);
+
+				color: var(--font-color);
+				background-color: var(--bg-color);
+
+				&[type="submit"] {
+					cursor: pointer;
+				}
+				&[type="text"] {
+					border-style: inset;
+				}
+			}
+		`
+
+		const header = css`
+			text-align: left;
+			margin-bottom: 10px;
+
+			.header-headline {
+				display: flex;
+				flex-direction: row;
+
+				img {
+					background-color: var(--color-fg);
+					border-radius: 50%;
+
+					max-width: 50px;
+
+					margin: 10px;
+				}
+
+				h1 {
+					margin: 0;
+					margin-top: auto;
+					margin-bottom: auto;
+					text-align: center;
+					& > a {
+						color: var(--heading-color);
+						text-decoration: none;
+					}
+				}
+			}
+
+			.header-links {
+				color: var(--bg-color);
+				background-color: var(--heading-color);
+
+				display: flex;
+				flex-direction: row;
+				justify-content: flex-end;
+
+				a {
+					color: var(--bg-color);
+					text-decoration: none;
+
+					padding-right: 10px;
+					padding-left: 10px;
+				}
+			}
+		`
+
+		const body = css`
+			color: var(--color-fg);
+			background-color: var(--bg-color);
+
+			width: 100%;
+		`
+
+		const footer = css`
+			color: var(--bg-color);
+			background-color: var(--color-fg);
+
+			margin-top: auto;
+			margin-bottom: 5px;
+
+			text-align: left;
+			font-size: 0.5em;
+
+			p {
+				display: inline-block;
+				margin: 0;
+				margin-right: 5px;
+				margin-left: 5px;
+			}
+
+			a {
+				color: var(--color-fg);
+				height: 1em;
+			}
+			.theme-swap {
+				float: right;
+			}
+		`
+
+		const Page404 = lazy(() => import('/pages/404.js'))
+		const LoginLanding = lazy(() => import('/pages/LoginLanding.js'))
+		const Unread = lazy(() => import('/pages/Unread.js'))
+		const RecentRead = lazy(() => import('/pages/RecentRead.js'))
+		const Feeds = lazy(() => import('/pages/Feeds.js'))
+		const FeedDetails = lazy(() => import('/pages/FeedDetails.js'))
+
+		render(html`
+			<${AuthProvider}><${ThemeProvider}>
+				<header class=${header}>
+					<div class="header-headline">
+						<img src="/assets/round.svg" alt="" width="50" height="50" />
+						<h1><a href="/">Really Simple Notifier</a></h1>
+					</div>
+					<div class="header-links">
+						<${AuthConsumer}>
+							${auth => {
+								if (auth.ok) {
+									return html`
+										<a href="/read/unread">Unread</a>
+										<a href="/read/recentread">Recently Read</a>
+										<a href="/read/feeds">Feeds</a>
+									`
+								}
+								return null
+							}}
+						<//>
+						<${LoginLogoutLink} />
+					</div>
+				</header>
+				<article class=${body}>
+					<${Router} onChange=${AuthProvider.refresh}>
+						<${Main} path="/" />
+
+						<${Suspense} path="/login-landing" fallback="${html`<h1>loading...</h1>`}">
+							<${LoginLanding} />
+						<//>
+
+						<${Suspense} path="/read/unread" fallback="${html`<h1>loading...</h1>`}">
+							<${Unread} />
+						<//>
+
+						<${Suspense} path="/read/recentread" fallback="${html`<h1>loading...</h1>`}">
+							<${RecentRead} />
+						<//>
+
+						<${Suspense} path="/read/feeds" fallback="${html`<h1>loading...</h1>`}">
+							<${Feeds} />
+						<//>
+
+						<${Suspense} path="/read/feed/:id" fallback="${html`<h1>loading...</h1>`}">
+							<${FeedDetails} />
+						<//>
+
+						<${Suspense} default fallback="${html`<h1>loading...</h1>`}">
+							<${Page404} />
+						<//>
+					<//>
+				</article>
+				<footer class=${footer}>
+					<!-- This is the most idiotic hack I have seen in a long time. The Match component doesn't seem fit
+					for purpose, it does not update when the route changes. However, we can just... Add a whole-ass
+					second router. It works. I guess. -->
+					<${Router}>
+						<${AddFeed} path="/read/unread"/>
+					<//>
+					<p>
+						This site runs off a pathetic little system with very limited computing resources, be nice to
+						it, it's trying as hard as it can.
+					</p>
+					<p>
+						<span>To report issues, get help, etc. send a message to: </span>
+						<span dangerouslySetInnerHTML=${{ __html: `<a
+							href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#109;&#105;&#108;&#111;&#64;&#104;&#116;&#116;&#112;&#115;&#99;&#111;&#108;&#111;&#110;&#115;&#108;&#97;&#115;&#104;&#115;&#108;&#97;&#115;&#104;&#119;&#119;&#119;&#46;&#99;&#111;&#109;"
+						>
+							&#109;&#105;&#108;&#111;&#64;&#104;&#116;&#116;&#112;&#115;&#99;&#111;&#108;&#111;&#110;&#115;&#108;&#97;&#115;&#104;&#115;&#108;&#97;&#115;&#104;&#119;&#119;&#119;&#46;&#99;&#111;&#109;
+						</a>`}}></span>
+					</p>
+					<p class="theme-swap">
+						<${ThemeConsumer}>
+							${data => {
+								return html`
+									<a
+										href="${data.theme == "dark" ? "light-theme" : "dark-theme"}"
+										class="theme-swap"
+										onclick=${ThemeProvider.toggle}
+									>
+										${data.theme == "dark" ? "☀" : "☼"}
+									</a>
+								`
+							}}
+						<//>
+					</p>
+				</footer>
+			<//><//>
+		`, document.body)
+		</script>
+		<noscript>
+			<h1>Please enable JavaScript to continue</h1>
+			<p>This website requires JavaScript to operate, please enable it to continue.</p>
+		</noscript>
+	</body>
+</html>
