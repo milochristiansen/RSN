@@ -44,6 +44,13 @@ const rowcss = css`
 	}
 `
 
+function trimPrefix(str, pre) {
+	if (str.indexOf(pre) === 0) {
+	    str = str.substring(pre.length);
+	}
+	return str
+}
+
 class FeedUnreadRow extends Component {
 	constructor() {
 		super();
@@ -81,7 +88,7 @@ class FeedUnreadRow extends Component {
 							class="article"
 							onclick=${(evnt) => this.openArticle(evnt, item.ID)}
 							native
-						>${item.Title}</a>
+						>${trimPrefix(item.Title, props.data[0].FeedName + " - ")}</a>
 						<${ReadUnreadButton} state=${this.state.read[item.ID] === true} aid=${item.ID}/>
 					</span>
 				`)}
