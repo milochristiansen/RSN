@@ -1,4 +1,7 @@
 
+# Binaries
+*.bin
+
 # Sublime stuff
 *.sublime-workspace
 *.sublime-project
@@ -7,3 +10,11 @@
 *.keys
 keys.go
 *.pem
+
+# Data files
+*.sql
+
+# Test server files
+Site/api/
+Site/auth/
+
