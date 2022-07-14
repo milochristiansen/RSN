@@ -4,9 +4,9 @@ import { route } from 'preact-router';
 
 import { AuthContext } from '/components/Auth.js'
 
-// AuthedCommonStructure handles the mechanics of getting the auth state for you. Unlike Component, your
+// AuthedComponent handles the mechanics of getting the auth state for you. Unlike Component, your
 // component should not define render, but rather override renderAuthed instead.
-class AuthedCommonStructure extends Component {
+class AuthedComponent extends Component {
 	static contextType = AuthContext
 
 	render(props, state) {
@@ -40,11 +40,11 @@ class AuthedCommonStructure extends Component {
 			if (to == "" || to == null || to == undefined) {
 				return false
 			}
-			route(to, true)
+			route(to)
 			return true
 		}
 		return false
 	}
 }
 
-export default AuthedCommonStructure
+export default AuthedComponent
