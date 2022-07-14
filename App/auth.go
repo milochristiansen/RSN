@@ -303,7 +303,7 @@ func GoogleLoginEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Redirect to the provider with our state value and a request for offline access (aka, give me a refresh token)
-	http.Redirect(w, r, AuthData.Config.AuthCodeURL(state, oauth2.AccessTypeOffline), http.StatusFound)
+	http.Redirect(w, r, AuthData.Config.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce), http.StatusFound)
 }
 
 func LogoutEndpoint(w http.ResponseWriter, r *http.Request) {
