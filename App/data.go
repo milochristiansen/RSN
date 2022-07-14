@@ -63,6 +63,13 @@ func ArticleExists(l *sessionlogger.Logger, url string) (exists, ok bool) {
 	return article != "", true
 }
 
+func UpdateFeedErrorState(l *sessionlogger.Logger, feed string, code int) {
+	_, err := Queries["UpdateFeedErrState"].Preped.Exec(feed, code)
+	if err != nil {
+		l.E.Printf("Cannot cannot update error state for feed %v, error: %v\n", feed, err)
+	}
+}
+
 var articleIDService <-chan string
 
 func init() {
@@ -111,10 +118,11 @@ func FeedListSubs(l *sessionlogger.Logger, feed string) []string {
 // =====================================================================================================================
 
 type Feed struct {
-	ID     string
-	Name   string
-	URL    string
-	Paused bool
+	ID        string
+	Name      string
+	URL       string
+	Paused    bool
+	ErrorCode int
 }
 
 func FeedList(l *sessionlogger.Logger, id string) []*Feed {
@@ -128,7 +136,7 @@ func FeedList(l *sessionlogger.Logger, id string) []*Feed {
 	feeds := []*Feed{}
 	for rows.Next() {
 		f := &Feed{}
-		err := rows.Scan(&f.ID, &f.Name, &f.URL, &f.Paused)
+		err := rows.Scan(&f.ID, &f.Name, &f.URL, &f.Paused, &f.NotFound)
 		if err != nil {
 			l.E.Printf("Feed list failed for user %v, error: %v\n", id, err)
 			return nil
@@ -143,7 +151,7 @@ func FeedList(l *sessionlogger.Logger, id string) []*Feed {
 
 func FeedDetails(l *sessionlogger.Logger, user, feed string) *Feed {
 	f := &Feed{}
-	err := Queries["FeedDetails"].Preped.QueryRow(user, feed).Scan(&f.ID, &f.Name, &f.URL, &f.Paused)
+	err := Queries["FeedDetails"].Preped.QueryRow(user, feed).Scan(&f.ID, &f.Name, &f.URL, &f.Paused, &f.NotFound)
 	if err != nil {
 		l.W.Printf("Error reading feed %v for user %v, error: %v\n", feed, user, err)
 		return nil

@@ -44,7 +44,9 @@ create table if not exists Users (
 create table if not exists Feeds (
 	ID text primary key,
 
-	URL text unique not null
+	URL text unique not null,
+
+	HTTPError integer,
 );
 create unique index if not exists FeedURLs on Feeds(URL);
 
@@ -107,6 +109,9 @@ var Queries = map[string]*queryHolder{
 	"FeedListSubs": {`
 		select User from Subscribed where Feed = ?1;
 	`, nil},
+	"UpdateFeedErrState": {`
+		update Feeds set HTTPError = ?2 where ID = ?1;
+	`, nil},
 
 	// /api/feed/list
 	"FeedList": {`
@@ -114,7 +119,7 @@ var Queries = map[string]*queryHolder{
 				select Name from Subscribed where Feed = Feeds.ID and User = ?1
 			) as Name, URL, (
 			ID in (select Feed from PausedFlags where User = ?1)
-		) from Feeds where (
+		), HTTPError from Feeds where (
 			ID in (select Feed from Subscribed where User = ?1)
 		) order by Name;
 	`, nil},
@@ -124,7 +129,7 @@ var Queries = map[string]*queryHolder{
 			select Name from Subscribed where Feed = ?2 and User = ?1
 		), URL, (
 			ID in (select Feed from PausedFlags where User = ?1)
-		) from Feeds where (
+		), HTTPError from Feeds where (
 			ID = ?2 and
 			ID in (select Feed from Subscribed where User = ?1)
 		);

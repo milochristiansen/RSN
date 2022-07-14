@@ -23,6 +23,7 @@ misrepresented as being the original software.
 package main
 
 import (
+	"errors"
 	"time"
 
 	"github.com/milochristiansen/sessionlogger"
@@ -56,8 +57,16 @@ func Background() {
 				if f != nil {
 					l.I.Printf("%#v\n", f)
 				}
+
+				hterr := &gofeed.HTTPError{}
+				if errors.As(err, hterr) {
+					UpdateFeedErrorState(l, feed, hterr.StatusCode)
+				}
 				continue
 			}
+
+			UpdateFeedErrorState(l, feed, 200) // May not actually be a 200, but it will be a 200 class.
+
 			for _, item := range f.Items {
 				// Check if we know of the item
 
