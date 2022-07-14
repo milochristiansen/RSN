@@ -21,8 +21,8 @@ class Feeds extends AuthedComponent {
 					<a href="/read/feed/${el.ID}" key=${el.ID}>
 						<span>${el.Name}</span>
 						<span>
-							${el.Paused ? html`<span class="pause"> (paused)</span>` : ""}
 							${el.ErrorCode != 200 ? html`<span class="error"> (error ${el.ErrorCode})</span>` : ""}
+							${el.Paused ? html`<span class="pause"> (paused)</span>` : ""}
 						</span>
 					</a>`)}
 			</section>
