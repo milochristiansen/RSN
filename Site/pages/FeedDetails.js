@@ -1,5 +1,6 @@
 
 import { html, css, Meta, Title } from "/header.js"
+import { route } from 'preact-router';
 import AuthedComponent from "/components/AuthedComponent.js"
 
 import SingleArticleRow from "/components/SingleArticleRow.js"
@@ -8,7 +9,7 @@ class FeedDetails extends AuthedComponent {
 	constructor(props) {
 		super();
 	
-		this.state = {data: {}, articles: []}
+		this.state = {data: {}, articles: [], delete: false}
 
 		this.update(props.id)
 	}
@@ -23,11 +24,47 @@ class FeedDetails extends AuthedComponent {
 				<a class="row" href=${state.data.URL}>${state.data.URL}</a>
 				${state.data.ErrorCode != 200 ? html`<span class="row error">Feed currently down, code ${state.data.ErrorCode}</span>` : ""}
 				${this.isrr() && html`<a class="row" href=${this.isrr()}>Go to Fiction Page on Royal Road</a>`}
+				<span class="row buttons">
+					${state.data.Paused ?
+						html`<button onclick=${() => this.pause(true)}>Unpause Feed</button>` :
+						html`<button onclick=${() => this.pause(false)}>Pause Feed</button>`
+					}
+					<button onclick=${() => this.delete()} class=${state.delete ? "confirm" : ""}>Delete Feed</button>
+				</span>
 			</section>
 			<section name="feed-article-list" class=${this.css.list}>
 				${state.articles.map(el => html`<${SingleArticleRow} key=${el.ID} data=${el} />`)}
 			</section>
 		`;
+	}
+
+	pause(y) {
+		let url = `/api/feed/unpause?id=${this.props.id}`
+		if (y) {
+			url = `/api/feed/pause?id=${this.props.id}`
+		}
+		fetch(url).then(r => {
+			if (r.ok) {
+				this.update(props.id)
+			}
+		})
+	}
+
+	delete() {
+		this.setState(state => {
+			if (!this.state.delete) {
+				setTimeout(() => this.setState({delete: false}), 2000)
+				return {delete: true}
+			}
+
+			let url = `/api/feed/unsubscribe?id=${this.props.id}`
+			fetch(url).then(r => {
+				if (r.ok) {
+					route("/read/feeds")
+				}
+			})
+			return {delete: false}
+		})
 	}
 
 	isrr() {
@@ -101,6 +138,25 @@ class FeedDetails extends AuthedComponent {
 
 			.error {
 				color: var(--warning-color);
+			}
+
+			.buttons {
+				display: flex;
+				flex-direction: row;
+				justify-content: center;
+
+				button {
+					padding: 5px;
+					padding-left: 30px;
+					padding-right: 30px;
+
+					margin-left: 10px;
+					margin-right: 10px;
+				}
+			}
+
+			.confirm {
+				border-color: var(--warning-color);
 			}
 		`,
 		list: css`
