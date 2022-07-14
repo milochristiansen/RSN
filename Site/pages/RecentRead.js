@@ -49,7 +49,7 @@ class RecentRead extends AuthedComponent {
 	}
 
 	componentDidMount() {
-		this.interval = setInterval(this.update, 60000)
+		this.interval = setInterval(() => this.update(), 60000)
 	}
 
 	componentWillUnmount() {
