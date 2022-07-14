@@ -33,7 +33,7 @@ class FeedRecentReadRow extends Component {
 
 		// We maintain a temporary cache of what articles have been marked read so that there is a visual indicator
 		// of which ones are read (and therefore will go away at the next update)
-		this.state = {unread: {}}
+		this.state = {read: true}
 	}
 
 	render(props, state) {
@@ -41,9 +41,8 @@ class FeedRecentReadRow extends Component {
 
 		return html`
 			<div
-				key=${item.ID}
-				onread=${() => this.setState(state => ({read: {...state.unread, [item.ID]: false}}))}
-				onunread=${() => this.setState(state => ({read: {...state.unread, [item.ID]: true}}))}
+				onread=${() => this.setState(state => ({read: true}))}
+				onunread=${() => this.setState(state => ({read: false}))}
 				class=${rowcss}
 			>
 				<a
@@ -53,7 +52,7 @@ class FeedRecentReadRow extends Component {
 					class="article"
 					native
 				>${item.FeedName} - ${item.Title}</a>
-				<${ReadUnreadButton} state=${this.state.unread[item.ID] === false} aid=${item.ID}/>
+				<${ReadUnreadButton} state=${this.state.read} aid=${item.ID}/>
 			</div>
 		`
 	}
