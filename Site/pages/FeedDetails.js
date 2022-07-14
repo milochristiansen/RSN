@@ -21,8 +21,8 @@ class FeedDetails extends AuthedComponent {
 			<section name="feed-details" class=${this.css.details}>
 				<h2 class="row">${state.data.Name} ${state.data.Paused && html`<span>(paused)</span>`}</h2>
 				<a class="row" href=${state.data.URL}>${state.data.URL}</a>
-				${state.data.ErrorCode != 200 ? html`<span class="row">Feed currently down, code ${state.data.ErrorCode}</span>` : ""}
-				${this.isrr() && html`<a href=${this.isrr()}>Go to Fiction Page on Royal Road</a>`}
+				${state.data.ErrorCode != 200 ? html`<span class="row error">Feed currently down, code ${state.data.ErrorCode}</span>` : ""}
+				${this.isrr() && html`<a class="row" href=${this.isrr()}>Go to Fiction Page on Royal Road</a>`}
 			</section>
 			<section name="feed-article-list" class=${this.css.list}>
 				${state.articles.map(el => html`<${SingleArticleRow} key=${el.ID} data=${el} />`)}
@@ -86,7 +86,7 @@ class FeedDetails extends AuthedComponent {
 			flex-direction: column;
 			text-align: center;
 
-			h2, a {
+			.row {
 				width: 100%;
 				overflow: wrap;
 				overflow-wrap: break-word;
@@ -97,6 +97,10 @@ class FeedDetails extends AuthedComponent {
 				padding-right: 10px;
 			
 				margin-bottom: 10px;
+			}
+
+			.error {
+				color: var(--warning-color);
 			}
 		`,
 		list: css`
