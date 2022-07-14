@@ -17,7 +17,12 @@ class Feeds extends AuthedComponent {
 			<${Meta} k="description" v="Really Simple Notifier subscribed feed list page." />
 
 			<section name="feedlist" class=${this.css.list}>
-				${state.data.map(el => html`<a href="/read/feed/${el.ID}" key=${el.ID}><span>${el.Name}</span>${el.Paused ? html`<span>(paused)</span>` : ""}</a>`)}
+				${state.data.map(el => html`
+					<a href="/read/feed/${el.ID}" key=${el.ID}>
+						<span>${el.Name}</span>
+						${el.Paused ? html`<span class="pause">(paused)</span>` : ""}
+						${el.ErrorCode != 200 ? html`<span class="error">(error ${el.ErrorCode})</span>` : ""}
+					</a>`)}
 			</section>
 		`;
 	}
@@ -63,8 +68,11 @@ class Feeds extends AuthedComponent {
 
 				text-decoration: none;
 
-				span:nth-of-type(2) {
+				.pause {
 					color: var(--secondary-color);
+				}
+				.error {
+					color: var(--warning-color);
 				}
 			}
 		`
