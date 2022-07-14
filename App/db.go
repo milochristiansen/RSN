@@ -32,8 +32,6 @@ const (
 )
 
 var InitCode = `
-pragma foreign_keys=on;
-
 create table if not exists Users (
 	ID text primary key,
 
@@ -208,7 +206,7 @@ var Queries = map[string]*queryHolder{
 
 func init() {
 	var err error
-	DB, err = sql.Open("sqlite3", "file:feeds.db")
+	DB, err = sql.Open("sqlite3", "file:feeds.db?_foreign_keys=true")
 	if err != nil {
 		panic(err)
 	}
