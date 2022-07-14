@@ -10,9 +10,9 @@ class Unread extends AuthedComponent {
 	
 		this.interval = null
 
-		this.state = {data: []}
+		this.state = {data: [], ok: null}
 
-		this.update()
+		this.update(true)
 	}
 
 	renderAuthed(auth, props, state) {
@@ -21,7 +21,15 @@ class Unread extends AuthedComponent {
 			<${Meta} k="description" v="Really Simple Notifier unread articles page." />
 
 			<section name="unreadlist" class=${this.css.list}>
-				${state.data.map(el => html`<${FeedUnreadRow} data=${el} key=${el[0].FeedID} />`)}
+				${(() => {
+					if (state.ok === true) {
+						return state.data.map(el => html`<${FeedUnreadRow} data=${el} key=${el[0].FeedID} />`)
+					} else if (state.ok === false) {
+						return html`<span>Error loading data: ${state.ok}</span>`
+					} else {
+						return html`<span>Loading feed data...</span>`
+					}
+				})()}
 			</section>
 		`;
 	}
@@ -36,7 +44,13 @@ class Unread extends AuthedComponent {
 		})
 			.then(r => {
 				if (!r.ok) {
-					throw new Error("Request failed.")
+					this.setState(state => {
+						if (state.ok === null) {
+							return {ok: r.status}
+						}
+						return {} // Change nothing
+					})
+					throw new Error(r.status)
 				}
 				return r.json()
 			})
@@ -56,10 +70,7 @@ class Unread extends AuthedComponent {
 					helper[el.FeedID] = newdata.length
 					newdata.push([el])
 				}
-				this.setState({data: newdata})
-			})
-			.catch(err => {
-				console.log(err)
+				this.setState({data: newdata, ok: true})
 			})
 	}
 
