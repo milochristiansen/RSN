@@ -136,7 +136,7 @@ func FeedList(l *sessionlogger.Logger, id string) []*Feed {
 	feeds := []*Feed{}
 	for rows.Next() {
 		f := &Feed{}
-		err := rows.Scan(&f.ID, &f.Name, &f.URL, &f.Paused, &f.NotFound)
+		err := rows.Scan(&f.ID, &f.Name, &f.URL, &f.Paused, &f.ErrorCode)
 		if err != nil {
 			l.E.Printf("Feed list failed for user %v, error: %v\n", id, err)
 			return nil
@@ -151,7 +151,7 @@ func FeedList(l *sessionlogger.Logger, id string) []*Feed {
 
 func FeedDetails(l *sessionlogger.Logger, user, feed string) *Feed {
 	f := &Feed{}
-	err := Queries["FeedDetails"].Preped.QueryRow(user, feed).Scan(&f.ID, &f.Name, &f.URL, &f.Paused, &f.NotFound)
+	err := Queries["FeedDetails"].Preped.QueryRow(user, feed).Scan(&f.ID, &f.Name, &f.URL, &f.Paused, &f.ErrorCode)
 	if err != nil {
 		l.W.Printf("Error reading feed %v for user %v, error: %v\n", feed, user, err)
 		return nil
