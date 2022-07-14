@@ -21,6 +21,7 @@ class FeedDetails extends AuthedComponent {
 			<section name="feed-details" class=${this.css.details}>
 				<h2 class="row">${state.data.Name} ${state.data.Paused && html`<span>(paused)</span>`}</h2>
 				<a class="row" href=${state.data.URL}>${state.data.URL}</a>
+				${state.data.ErrorCode != 200 ? html`<span class="row">Feed currently down, code ${state.data.ErrorCode}</span>` : ""}
 				${this.isrr() && html`<a href=${this.isrr()}>Go to Fiction Page on Royal Road</a>`}
 			</section>
 			<section name="feed-article-list" class=${this.css.list}>
