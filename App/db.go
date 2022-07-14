@@ -46,7 +46,7 @@ create table if not exists Feeds (
 
 	URL text unique not null,
 
-	HTTPError integer,
+	HTTPError integer
 );
 create unique index if not exists FeedURLs on Feeds(URL);
 
