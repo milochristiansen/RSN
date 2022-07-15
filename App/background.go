@@ -24,6 +24,7 @@ package main
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/milochristiansen/sessionlogger"
@@ -84,7 +85,13 @@ func Background() {
 					}
 				}
 
-				ArticleAdd(l, feed, item.Title, item.Link, *t)
+				// Strip the most common way of inserting the feed title into the article title.
+				title := item.Title
+				if strings.HasPrefix(title, f.Title + " - ") {
+					title = strings.TrimPrefix(title, f.Title + " - ")
+				}
+
+				ArticleAdd(l, feed, title, item.Link, *t)
 
 				// users := FeedListSubs(l, feed)
 				// if users == nil {
