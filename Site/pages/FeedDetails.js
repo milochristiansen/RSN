@@ -24,9 +24,9 @@ class FeedDetails extends AuthedComponent {
 					if (state.dataOk === true) {
 						return html`
 							<h2 class="row">${state.data.Name} ${state.data.Paused && html`<span>(paused)</span>`}</h2>
-							<a class="row" href=${state.data.URL}>${state.data.URL}</a>
+							<a class="row" target="_blank" rel="noreferrer" href=${state.data.URL} native>${state.data.URL}</a>
 							${state.data.ErrorCode != 200 ? html`<span class="row error">Feed currently down, code ${state.data.ErrorCode}</span>` : ""}
-							${this.isrr() && html`<a class="row" href=${this.isrr()}>Go to Fiction Page on Royal Road</a>`}
+							${this.isrr() && html`<a class="row" target="_blank" rel="noreferrer" href=${this.isrr()} native>Go to Fiction Page on Royal Road</a>`}
 							<span class="row buttons">
 								${state.data.Paused ?
 									html`<button onclick=${() => this.pause(true)}>Unpause Feed</button>` :
