@@ -24,10 +24,10 @@ class Unread extends AuthedComponent {
 				${(() => {
 					if (state.ok === true) {
 						return state.data.map(el => html`<${FeedUnreadRow} data=${el} key=${el[0].FeedID} />`)
-					} else if (state.ok === false) {
-						return html`<span>Error loading data: ${state.ok}</span>`
+					} else if (state.ok !== null) {
+						return html`<span class="status">Error loading data: ${state.ok}</span>`
 					} else {
-						return html`<span>Loading feed data...</span>`
+						return html`<span class="status">Loading feed data...</span>`
 					}
 				})()}
 			</section>
@@ -86,6 +86,12 @@ class Unread extends AuthedComponent {
 		list: css`
 			display: flex;
 			flex-direction: column;
+
+			.status {
+				width: 100%;
+				font-size: 32px;
+				text-align: center;
+			}
 		`
 	}
 }

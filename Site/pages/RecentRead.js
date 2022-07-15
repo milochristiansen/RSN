@@ -10,7 +10,7 @@ class RecentRead extends AuthedComponent {
 	
 		this.interval = null
 
-		this.state = {data: []}
+		this.state = {data: [], ok: null}
 
 		this.update()
 	}
@@ -21,7 +21,15 @@ class RecentRead extends AuthedComponent {
 			<${Meta} k="description" v="Really Simple Notifier recently read articles page." />
 
 			<section name="unreadlist" class=${this.css.list}>
-				${state.data.map(el => html`<${FeedRecentReadRow} data=${el} key=${el.ID}/>`)}
+				${(() => {
+					if (state.ok === true) {
+						return state.data.map(el => html`<${FeedRecentReadRow} data=${el} key=${el.ID}/>`)
+					} else if (state.ok !== null) {
+						return html`<span class="status">Error loading data: ${state.ok}</span>`
+					} else {
+						return html`<span class="status">Loading article data...</span>`
+					}
+				})()}
 			</section>
 		`;
 	}
@@ -36,15 +44,18 @@ class RecentRead extends AuthedComponent {
 		})
 			.then(r => {
 				if (!r.ok) {
-					throw new Error("Request failed.")
+					this.setState(state => {
+						if (state.ok === null) {
+							return {ok: r.status}
+						}
+						return {} // Change nothing
+					})
+					throw new Error(r.status)
 				}
 				return r.json()
 			})
 			.then(data => {
-				this.setState({data: data})
-			})
-			.catch(err => {
-				console.log(err)
+				this.setState({data: data, ok: true})
 			})
 	}
 
@@ -60,6 +71,12 @@ class RecentRead extends AuthedComponent {
 		list: css`
 			display: flex;
 			flex-direction: column;
+
+			.status {
+				width: 100%;
+				font-size: 32px;
+				text-align: center;
+			}
 		`
 	}
 }

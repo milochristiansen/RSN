@@ -9,7 +9,7 @@ class FeedDetails extends AuthedComponent {
 	constructor(props) {
 		super();
 	
-		this.state = {data: {}, articles: [], delete: false}
+		this.state = {data: {}, articles: [], delete: false, dataOk: null, artOk: null}
 
 		this.update(props.id)
 	}
@@ -20,20 +20,38 @@ class FeedDetails extends AuthedComponent {
 			<${Meta} k="description" v="Really Simple Notifier feed details page." />
 
 			<section name="feed-details" class=${this.css.details}>
-				<h2 class="row">${state.data.Name} ${state.data.Paused && html`<span>(paused)</span>`}</h2>
-				<a class="row" href=${state.data.URL}>${state.data.URL}</a>
-				${state.data.ErrorCode != 200 ? html`<span class="row error">Feed currently down, code ${state.data.ErrorCode}</span>` : ""}
-				${this.isrr() && html`<a class="row" href=${this.isrr()}>Go to Fiction Page on Royal Road</a>`}
-				<span class="row buttons">
-					${state.data.Paused ?
-						html`<button onclick=${() => this.pause(true)}>Unpause Feed</button>` :
-						html`<button onclick=${() => this.pause(false)}>Pause Feed</button>`
+				${(() => {
+					if (state.dataOk === true) {
+						return html`
+							<h2 class="row">${state.data.Name} ${state.data.Paused && html`<span>(paused)</span>`}</h2>
+							<a class="row" href=${state.data.URL}>${state.data.URL}</a>
+							${state.data.ErrorCode != 200 ? html`<span class="row error">Feed currently down, code ${state.data.ErrorCode}</span>` : ""}
+							${this.isrr() && html`<a class="row" href=${this.isrr()}>Go to Fiction Page on Royal Road</a>`}
+							<span class="row buttons">
+								${state.data.Paused ?
+									html`<button onclick=${() => this.pause(true)}>Unpause Feed</button>` :
+									html`<button onclick=${() => this.pause(false)}>Pause Feed</button>`
+								}
+								<button onclick=${() => this.delete()} class=${state.delete ? "confirm" : ""}>Delete Feed</button>
+							</span>
+						`
+					} else if (state.dataOk !== null) {
+						return html`<span class="status">Error loading data: ${state.dataOk}</span>`
+					} else {
+						return html`<span class="status">Loading feed data...</span>`
 					}
-					<button onclick=${() => this.delete()} class=${state.delete ? "confirm" : ""}>Delete Feed</button>
-				</span>
+				})()}
 			</section>
 			<section name="feed-article-list" class=${this.css.list}>
-				${state.articles.map(el => html`<${SingleArticleRow} key=${el.ID} data=${el} />`)}
+				${(() => {
+					if (state.artOk === true) {
+						return state.articles.map(el => html`<${SingleArticleRow} key=${el.ID} data=${el} />`)
+					} else if (state.artOk !== null) {
+						return html`<span class="status">Error loading data: ${state.artOk}</span>`
+					} else {
+						return html`<span class="status">Loading article data...</span>`
+					}
+				})()}
 			</section>
 		`;
 	}
@@ -89,15 +107,18 @@ class FeedDetails extends AuthedComponent {
 		})
 			.then(r => {
 				if (!r.ok) {
-					throw new Error("Request failed.")
+					this.setState(state => {
+						if (state.dataOk === null) {
+							return {dataOk: r.status}
+						}
+						return {} // Change nothing
+					})
+					throw new Error(r.status)
 				}
 				return r.json()
 			})
 			.then(data => {
-				this.setState({data: data})
-			})
-			.catch(err => {
-				console.log(err)
+				this.setState({data: data, dataOk: true})
 			})
 
 		fetch("/api/feed/articles?id="+id, {
@@ -105,15 +126,18 @@ class FeedDetails extends AuthedComponent {
 		})
 			.then(r => {
 				if (!r.ok) {
-					throw new Error("Request failed.")
+					this.setState(state => {
+						if (state.artOk === null) {
+							return {artOk: r.status}
+						}
+						return {} // Change nothing
+					})
+					throw new Error(r.status)
 				}
 				return r.json()
 			})
 			.then(articles => {
-				this.setState({articles: articles})
-			})
-			.catch(err => {
-				console.log(err)
+				this.setState({articles: articles, artOk: true})
 			})
 	}
 
@@ -158,10 +182,22 @@ class FeedDetails extends AuthedComponent {
 			.confirm {
 				border-color: var(--warning-color);
 			}
+
+			.status {
+				width: 100%;
+				font-size: 32px;
+				text-align: center;
+			}
 		`,
 		list: css`
 			display: flex;
 			flex-direction: column;
+
+			.status {
+				width: 100%;
+				font-size: 32px;
+				text-align: center;
+			}
 		`
 	}
 }
