@@ -31,6 +31,15 @@ const (
 	UserProviderGoogle = iota // Currently the only one.
 )
 
+/*
+Commands for cleaning foreign key screw ups from the DB.
+
+DELETE FROM Articles WHERE Feed NOT IN (SELECT ID FROM Feeds);
+DELETE FROM ReadFlags WHERE Article NOT IN (SELECT ID FROM Articles);
+DELETE FROM PausedFlags WHERE Feed NOT IN (SELECT ID FROM Feeds);
+DELETE FROM Subscribed WHERE Feed NOT IN (SELECT ID FROM Feeds);
+*/
+
 var InitCode = `
 create table if not exists Users (
 	ID text primary key,
