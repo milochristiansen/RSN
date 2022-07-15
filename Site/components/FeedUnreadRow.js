@@ -14,10 +14,20 @@ const rowcss = css`
 	border-style: outset;
 	border-color: var(--secondary-color);
 
-	h4 {
-		text-align: center;
-		margin-top: 5px;
-		margin-bottom: 5px;
+	.feed {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-around;
+
+		a {
+			font-weight: bold;
+			color: var(--heading-color);
+
+			text-decoration: none;
+
+			margin-top: 5px;
+			margin-bottom: 5px;
+		}
 	}
 
 	strong {
@@ -27,7 +37,7 @@ const rowcss = css`
 		text-align: center;
 	}
 
-	span {
+	.article {
 		display: flex;
 		flex-direction: row;
 		position: relative;
@@ -39,13 +49,14 @@ const rowcss = css`
 
 		margin-top: 2px;
 
-		.article {
+		&-link {
 			width: 100%;
 			flex: 1;
 
 			text-decoration: none;
 
 			margin: 2px;
+			margin-right: 10px;
 			padding: 5px;
 		}
 	}
@@ -70,7 +81,7 @@ class FeedUnreadRow extends Component {
 	}
 
 	openArticle(evnt, id) {
-		fetch("/api/article/read?id=" + id).then(r => {
+		fetch(`/api/article/read?id=${id}`).then(r => {
 			if (r.ok) {
 				this.setState(state => ({read: {...state.read, [id]: true}}))
 			}
@@ -92,17 +103,18 @@ class FeedUnreadRow extends Component {
 
 		return html`
 			<div ref=${this.root} class=${rowcss}>
-				<h4>${props.data[0].FeedName}</h4>
+				<span class="feed"><a href=${`/read/feed/${props.data[0].FeedID}`}>${props.data[0].FeedName}</a></span>
 				${data.map(item => item === null ? html`<strong>\u00B7\u00B7\u00B7</strong>` : html`
 					<span
 						key=${item.ID}
+						class="article"
 						onread=${() => this.setState(state => ({read: {...state.read, [item.ID]: true}}))}
 						onunread=${() => this.setState(state => ({read: {...state.read, [item.ID]: false}}))}
 					>
 						<a
 							href=${item.URL}
 							rel="noreferrer"
-							class="article"
+							class="article-link"
 							onclick=${(evnt) => this.openArticle(evnt, item.ID)}
 							native
 						>${trimPrefix(item.Title, props.data[0].FeedName + " - ")}</a>
