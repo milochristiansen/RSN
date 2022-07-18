@@ -61,7 +61,7 @@ class Feeds extends AuthedComponent {
 				return r.json()
 			})
 			.then(data => {
-				this.setState({data: data})
+				this.setState({data: data, ok: true})
 			})
 	}
 
