@@ -4,6 +4,7 @@ import { route } from 'preact-router';
 import AuthedComponent from "/components/AuthedComponent.js"
 
 import SingleArticleRow from "/components/SingleArticleRow.js"
+import Fallback from "/components/Fallback.js"
 
 class FeedDetails extends AuthedComponent {
 	constructor(props) {
@@ -36,9 +37,9 @@ class FeedDetails extends AuthedComponent {
 							</span>
 						`
 					} else if (state.dataOk !== null) {
-						return html`<span class="status">Error loading data: ${state.dataOk}</span>`
+						return html`<${Fallback}>Error loading data: ${state.dataOk}<//>`
 					} else {
-						return html`<span class="status">Loading feed data...</span>`
+						return html`<${Fallback}>Loading feed data...<//>`
 					}
 				})()}
 			</section>
@@ -47,9 +48,9 @@ class FeedDetails extends AuthedComponent {
 					if (state.artOk === true) {
 						return state.articles.map(el => html`<${SingleArticleRow} key=${el.ID} data=${el} />`)
 					} else if (state.artOk !== null) {
-						return html`<span class="status">Error loading data: ${state.artOk}</span>`
+						return html`<${Fallback}>Error loading data: ${state.artOk}<//>`
 					} else {
-						return html`<span class="status">Loading article data...</span>`
+						return html`<${Fallback}>Loading article data...<//>`
 					}
 				})()}
 			</section>

@@ -3,6 +3,7 @@ import { html, css, Meta, Title } from "/header.js"
 import AuthedComponent from "/components/AuthedComponent.js"
 
 import FeedUnreadRow from "/components/FeedUnreadRow.js"
+import Fallback from "/components/Fallback.js"
 
 class Unread extends AuthedComponent {
 	constructor() {
@@ -25,9 +26,9 @@ class Unread extends AuthedComponent {
 					if (state.ok === true) {
 						return state.data.map(el => html`<${FeedUnreadRow} data=${el} key=${el[0].FeedID} />`)
 					} else if (state.ok !== null) {
-						return html`<span class="status">Error loading data: ${state.ok}</span>`
+						return html`<${Fallback}>Error loading data: ${state.ok}<//>`
 					} else {
-						return html`<span class="status">Loading feed data...</span>`
+						return html`<${Fallback}>Loading feed data...<//>`
 					}
 				})()}
 			</section>
@@ -86,12 +87,6 @@ class Unread extends AuthedComponent {
 		list: css`
 			display: flex;
 			flex-direction: column;
-
-			.status {
-				width: 100%;
-				font-size: 32px;
-				text-align: center;
-			}
 		`
 	}
 }

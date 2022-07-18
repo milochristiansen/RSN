@@ -3,6 +3,7 @@ import { html, css, Meta, Title } from "/header.js"
 import AuthedComponent from "/components/AuthedComponent.js"
 
 import FeedRecentReadRow from "/components/FeedRecentReadRow.js"
+import Fallback from "/components/Fallback.js"
 
 class RecentRead extends AuthedComponent {
 	constructor() {
@@ -25,9 +26,9 @@ class RecentRead extends AuthedComponent {
 					if (state.ok === true) {
 						return state.data.map(el => html`<${FeedRecentReadRow} data=${el} key=${el.ID}/>`)
 					} else if (state.ok !== null) {
-						return html`<span class="status">Error loading data: ${state.ok}</span>`
+						return html`<${Fallback}>Error loading data: ${state.ok}<//>`
 					} else {
-						return html`<span class="status">Loading article data...</span>`
+						return html`<${Fallback}>Loading article data...<//>`
 					}
 				})()}
 			</section>

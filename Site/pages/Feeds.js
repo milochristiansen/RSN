@@ -2,11 +2,13 @@
 import { html, css, Meta, Title } from "/header.js"
 import AuthedComponent from "/components/AuthedComponent.js"
 
+import Fallback from "/components/Fallback.js"
+
 class Feeds extends AuthedComponent {
 	constructor() {
 		super();
 	
-		this.state = {data: []}
+		this.state = {data: [], ok: null}
 
 		this.update()
 	}
@@ -17,14 +19,23 @@ class Feeds extends AuthedComponent {
 			<${Meta} k="description" v="Really Simple Notifier subscribed feed list page." />
 
 			<section name="feedlist" class=${this.css.list}>
-				${state.data.map(el => html`
-					<a href="/read/feed/${el.ID}" key=${el.ID}>
-						<span>${el.Name}</span>
-						<span>
-							${el.ErrorCode != 200 ? html`<span class="error"> (error ${el.ErrorCode})</span>` : ""}
-							${el.Paused ? html`<span class="pause"> (paused)</span>` : ""}
-						</span>
-					</a>`)}
+				${(() => {
+					if (state.ok === true) {
+						return state.data.map(el => html`
+							<a href="/read/feed/${el.ID}" key=${el.ID}>
+								<span>${el.Name}</span>
+								<span>
+									${el.ErrorCode != 200 ? html`<span class="error"> (error ${el.ErrorCode})</span>` : ""}
+									${el.Paused ? html`<span class="pause"> (paused)</span>` : ""}
+								</span>
+							</a>
+						`)
+					} else if (state.ok !== null) {
+						return html`<${Fallback}>Error loading data: ${state.ok}<//>`
+					} else {
+						return html`<${Fallback}>Loading feed data...<//>`
+					}
+				})()}
 			</section>
 		`;
 	}
@@ -39,15 +50,18 @@ class Feeds extends AuthedComponent {
 		})
 			.then(r => {
 				if (!r.ok) {
-					throw new Error("Request failed.")
+					this.setState(state => {
+						if (state.ok === null) {
+							return {ok: r.status}
+						}
+						return {} // Change nothing
+					})
+					throw new Error(r.status)
 				}
 				return r.json()
 			})
 			.then(data => {
 				this.setState({data: data})
-			})
-			.catch(err => {
-				console.log(err)
 			})
 	}
 

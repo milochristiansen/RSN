@@ -66,6 +66,8 @@
 
 		import AddFeed from "/components/AddFeed.js"
 
+		import Fallback from "/components/Fallback.js"
+
 		import Main from '/pages/Main.js'
 
 		// Handle max width properly.
@@ -248,6 +250,8 @@
 		const Feeds = lazy(() => import('/pages/Feeds.js'))
 		const FeedDetails = lazy(() => import('/pages/FeedDetails.js'))
 
+		const LoadingDotDotDot = html`<${Fallback}>Loading Page...<//>`
+
 		render(html`
 			<${AuthProvider}><${ThemeProvider}>
 				<header class=${header}>
@@ -275,19 +279,19 @@
 					<${Router} onChange=${AuthProvider.refresh}>
 						<${Main} path="/" />
 
-						<${Suspense} path="/login-landing" fallback="${html`<h1>loading...</h1>`}">
+						<${Suspense} path="/login-landing" fallback="${LoadingDotDotDot}">
 							<${LoginLanding} />
 						<//>
 
-						<${Suspense} path="/read/unread" fallback="${html`<h1>loading...</h1>`}">
+						<${Suspense} path="/read/unread" fallback="${LoadingDotDotDot}">
 							<${Unread} />
 						<//>
 
-						<${Suspense} path="/read/recentread" fallback="${html`<h1>loading...</h1>`}">
+						<${Suspense} path="/read/recentread" fallback="${LoadingDotDotDot}">
 							<${RecentRead} />
 						<//>
 
-						<${Suspense} path="/read/feeds" fallback="${html`<h1>loading...</h1>`}">
+						<${Suspense} path="/read/feeds" fallback="${LoadingDotDotDot}">
 							<${Feeds} />
 						<//>
 
@@ -297,14 +301,14 @@
 						<${PropWrapper} path="/read/feed/:id">
 							${props => {
 								return html`
-									<${Suspense} fallback="${html`<h1>loading...</h1>`}">
+									<${Suspense} fallback="${LoadingDotDotDot}">
 										<${FeedDetails} id=${props.id} />
 									<//>
 								`
 							}}
 						<//>
 
-						<${Suspense} default fallback="${html`<h1>loading...</h1>`}">
+						<${Suspense} default fallback="${LoadingDotDotDot}">
 							<${Page404} />
 						<//>
 					<//>
