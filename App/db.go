@@ -183,6 +183,11 @@ var Queries = map[string]*queryHolder{
 	"FeedPause": {`
 		insert into PausedFlags (User, Feed) values (?1, ?2);
 	`, nil},
+	"CleanPausedFlags":{`
+		delete from PausedFlags where rowid not in (
+			select min(rowid) from PausedFlags group by User, Feed
+		);
+	`, nil},
 	// /api/feed/unpause
 	"FeedUnpause": {`
 		delete from PausedFlags where User = ?1 and Feed = ?2;
@@ -191,6 +196,11 @@ var Queries = map[string]*queryHolder{
 	// /api/article/read
 	"ArticleRead": {`
 		insert into ReadFlags (User, Article) values (?1, ?2);
+	`, nil},
+	"CleanReadFlags":{`
+		delete from ReadFlags where rowid not in (
+			select min(rowid) from ReadFlags group by User, Article
+		);
 	`, nil},
 	// /api/article/unread
 	"ArticleUnread": {`

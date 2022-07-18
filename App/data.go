@@ -299,6 +299,11 @@ func FeedPause(l *sessionlogger.Logger, user, feed string) int {
 		l.E.Printf("Failed pausing feed %v, error: %v\n", feed, err)
 		return http.StatusInternalServerError
 	}
+
+	_, err = Queries["CleanPausedFlags"].Preped.Exec()
+	if err != nil {
+		l.W.Printf("Failed cleaning pause flags, error: %v\n", err)
+	}
 	return http.StatusOK
 }
 
@@ -322,6 +327,11 @@ func ArticleMarkRead(l *sessionlogger.Logger, user, article string) int {
 	if err != nil {
 		l.E.Printf("Failed marking article (%v) read, error: %v\n", article, err)
 		return http.StatusInternalServerError
+	}
+
+	_, err = Queries["CleanReadFlags"].Preped.Exec()
+	if err != nil {
+		l.W.Printf("Failed cleaning pause flags, error: %v\n", err)
 	}
 	return http.StatusOK
 }
