@@ -5,11 +5,13 @@ const style = css`
 	width: 100%;
 	font-size: 32px;
 	text-align: center;
+
+	color: var(--heading-color);
 `
 
 function Fallback(props) {
 	return html`
-		<span class=${style}>${props.children}</span>
+		<div class=${style}>${props.children}</div>
 	`
 }
 
