@@ -72,12 +72,6 @@ class RecentRead extends AuthedComponent {
 		list: css`
 			display: flex;
 			flex-direction: column;
-
-			.status {
-				width: 100%;
-				font-size: 32px;
-				text-align: center;
-			}
 		`
 	}
 }
