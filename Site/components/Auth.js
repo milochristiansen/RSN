@@ -20,7 +20,7 @@ class AuthProvider extends Component {
 		this.refresh()
 	}
 
-	refresh() {
+	refresh = () => {
 		fetch("/auth/whoami", {
 			credentials: 'include'
 		})

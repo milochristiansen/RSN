@@ -276,42 +276,44 @@
 					</div>
 				</header>
 				<article class=${body}>
-					<${Router} onChange=${AuthProvider.refresh}>
-						<${Main} path="/" />
+					<${AuthConsumer}>${auth => html`
+						<${Router} onChange=${evnt => auth.refresh(evnt)}>
+							<${Main} path="/" />
 
-						<${Suspense} path="/login-landing" fallback=${LoadingDotDotDot}>
-							<${LoginLanding} />
-						<//>
+							<${Suspense} path="/login-landing" fallback=${LoadingDotDotDot}>
+								<${LoginLanding} />
+							<//>
 
-						<${Suspense} path="/read/unread" fallback=${LoadingDotDotDot}>
-							<${Unread} />
-						<//>
+							<${Suspense} path="/read/unread" fallback=${LoadingDotDotDot}>
+								<${Unread} />
+							<//>
 
-						<${Suspense} path="/read/recentread" fallback=${LoadingDotDotDot}>
-							<${RecentRead} />
-						<//>
+							<${Suspense} path="/read/recentread" fallback=${LoadingDotDotDot}>
+								<${RecentRead} />
+							<//>
 
-						<${Suspense} path="/read/feeds" fallback=${LoadingDotDotDot}>
-							<${Feeds} />
-						<//>
+							<${Suspense} path="/read/feeds" fallback=${LoadingDotDotDot}>
+								<${Feeds} />
+							<//>
 
-						<!-- This router is shit. It is very light weight and simple, but it is still shit.
-						This little hack is needed to get the props past Suspense. There doesn't seem to be
-						another way to do it. -->
-						<${PropWrapper} path="/read/feed/:id">
-							${props => {
-								return html`
-									<${Suspense} fallback=${LoadingDotDotDot}>
-										<${FeedDetails} id=${props.id} />
-									<//>
-								`
-							}}
-						<//>
+							<!-- This router is shit. It is very light weight and simple, but it is still shit.
+							This little hack is needed to get the props past Suspense. There doesn't seem to be
+							another way to do it. -->
+							<${PropWrapper} path="/read/feed/:id">
+								${props => {
+									return html`
+										<${Suspense} fallback=${LoadingDotDotDot}>
+											<${FeedDetails} id=${props.id} />
+										<//>
+									`
+								}}
+							<//>
 
-						<${Suspense} default fallback=${LoadingDotDotDot}>
-							<${Page404} />
+							<${Suspense} default fallback=${LoadingDotDotDot}>
+								<${Page404} />
+							<//>
 						<//>
-					<//>
+					`}<//>
 				</article>
 				<footer class=${footer}>
 					<!-- This is the most idiotic hack I have seen in a long time. The Match component doesn't seem fit
@@ -337,9 +339,9 @@
 							${data => {
 								return html`
 									<a
-										href="${data.theme == "dark" ? "light-theme" : "dark-theme"}"
+										href="${data.theme == "dark" ? "#light-theme" : "#dark-theme"}"
 										class="theme-swap"
-										onclick=${ThemeProvider.toggle}
+										onclick=${evnt => data.toggle(evnt)}
 									>
 										${data.theme == "dark" ? "☀" : "☼"}
 									</a>

@@ -16,11 +16,12 @@ class ThemeProvider extends Component {
 	}
 
 	toggle = (evnt) => {
-		this.setState(function(state, props) {
+		this.setState((state, props) => {
 			const theme = state.data.theme == "light" ? "dark" : "light"
 			document.documentElement.setAttribute("data-theme", theme);
+			localStorage.setItem("theme", theme)
 			return {
-				data: {toggle: this.toggle, data: theme}
+				data: {toggle: this.toggle, theme: theme}
 			};
 		})
 		evnt.preventDefault();
