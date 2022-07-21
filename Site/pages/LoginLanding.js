@@ -6,6 +6,10 @@ class LoginLanding extends Component {
 		return html`
 			<${Title} text="RSN - Login/Sign-up" />
 			<${Meta} k="description" v="Really Simple Notifier login and signup page." />
+			<h2>Login and Account Information</h2>
+			<p>
+				TLDR: Use the link in the header dingus.
+			</p>
 			<p>
 				Hello new or returning user! You probably got here because you want to create a new account. Well,
 				good news! Unlike pretty much every other annoying site on the internet I don't care about who you are,
