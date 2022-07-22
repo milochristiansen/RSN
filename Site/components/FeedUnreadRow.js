@@ -84,20 +84,10 @@ class FeedUnreadRow extends Component {
 	}
 
 	render(props, state) {
-		let articles = props.data.Articles
-		if (articles.length > 5) {
-			articles = []
-			for (let i = 0; i < 3; i++) {
-				articles[i] = props.data[i]
-			}
-			articles.push(null)
-			articles.push(props.data[props.data.length - 1])
-		}
-
 		return html`
 			<div ref=${this.root} class=${rowcss}>
 				<span class="feed"><a href=${`/read/feed/${props.data.FeedID}`}>${props.data.FeedName}</a></span>
-				${articles.map(item => item === null ? html`<strong>\u00B7\u00B7\u00B7</strong>` : html`
+				${props.data.Articles.map(item => item === null ? html`<strong>\u00B7\u00B7\u00B7</strong>` : html`
 					<span
 						key=${item.ID}
 						class="article"

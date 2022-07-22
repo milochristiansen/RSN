@@ -398,6 +398,18 @@ func GetUnread(l *sessionlogger.Logger, user string) []*UnreadData {
 				FeedID: fid,
 			})
 		}
+
+		// Send no more than 5 articles, with the break between the first four and the last one represented by a null.
+		if len(data[i].Articles) == 4 {
+			data[i].Articles = append(data[i].Articles, nil)
+			data[i].Articles = append(data[i].Articles, a)
+			continue
+		}
+		if len(data[i].Articles) == 6 {
+			data[i].Articles[5] = a
+			continue
+		}
+
 		data[i].Articles = append(data[i].Articles, a)
 	}
 	return data
