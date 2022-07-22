@@ -355,12 +355,17 @@ type UnreadArticle struct {
 	ID        string
 	Title     string
 	URL       string
-	FeedName  string // Feed *name*, not ID.
-	FeedID    string
 	Published time.Time
 }
 
-func GetUnread(l *sessionlogger.Logger, user string) []*UnreadArticle {
+type UnreadData struct {
+	FeedName  string
+	FeedID    string
+
+	Articles []*UnreadArticle
+}
+
+func GetUnread(l *sessionlogger.Logger, user string) []*UnreadData {
 	rows, err := Queries["GetUnread"].Preped.Query(user)
 	if err != nil {
 		l.E.Printf("Unread article list failed for user %v. Error: %v\n", user, err)
@@ -368,19 +373,34 @@ func GetUnread(l *sessionlogger.Logger, user string) []*UnreadArticle {
 	}
 	defer rows.Close()
 
-	articles := []*UnreadArticle{}
+	// Data comes from the DB as a list of articles sorted by date. Here we turn that into a list of feeds sorted by
+	// date of first article, containing a list of their articles sorted by date.
+	data := []*UnreadData{}
+	dataLUT := map[string]int{}
 	for rows.Next() {
 		a := &UnreadArticle{}
+		fid, fname := "", ""
 		var stamp int64
-		err := rows.Scan(&a.ID, &a.Title, &a.URL, &a.FeedName, &a.FeedID, &stamp)
+
+		err := rows.Scan(&a.ID, &a.Title, &a.URL, &fname, &fid, &stamp)
 		if err != nil {
 			l.E.Printf("Unread article list failed for user %v. Error: %v\n", user, err)
 			return nil
 		}
 		a.Published = time.Unix(stamp, 0)
-		articles = append(articles, a)
+
+		i, ok := dataLUT[fid]
+		if !ok {
+			i = len(data)
+			dataLUT[fid] = i
+			data = append(data, &UnreadData{
+				FeedName: fname,
+				FeedID: fid,
+			})
+		}
+		data[i].Articles = append(data[i].Articles, a)
 	}
-	return articles
+	return data
 }
 
 // /api/recentread

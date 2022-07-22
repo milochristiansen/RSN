@@ -24,7 +24,7 @@ class Unread extends AuthedComponent {
 			<section name="unreadlist" class=${this.css.list}>
 				${(() => {
 					if (state.ok === true) {
-						return state.data.map(el => html`<${FeedUnreadRow} data=${el} key=${el[0].FeedID} />`)
+						return state.data.map(el => html`<${FeedUnreadRow} data=${el} key=${el.FeedID} />`)
 					} else if (state.ok !== null) {
 						return html`<${Fallback}>Error loading data: ${state.ok}<//>`
 					} else {
@@ -56,22 +56,7 @@ class Unread extends AuthedComponent {
 				return r.json()
 			})
 			.then(data => {
-				// Fill the state with the freshly downloaded data.
-				// Since we get the data sorted by date without being split by feed, we can just do splitting by feed
-				// here and not need to do any sorting. The feeds come out sorted by first article, and the articles
-				// inside the feed come out sorted by date.
-				let newdata = []
-				let helper = {}
-				for (const el of data) {
-					const fi = helper[el.FeedID]
-					if (fi != undefined) {
-						newdata[fi].push(el)
-						continue
-					}
-					helper[el.FeedID] = newdata.length
-					newdata.push([el])
-				}
-				this.setState({data: newdata, ok: true})
+				this.setState({data: data, ok: true})
 			})
 	}
 
