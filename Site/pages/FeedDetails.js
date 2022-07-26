@@ -30,8 +30,8 @@ class FeedDetails extends AuthedComponent {
 							${this.isrr() && html`<a class="row" target="_blank" rel="noreferrer" href=${this.isrr()} native>Go to Fiction Page on Royal Road</a>`}
 							<span class="row buttons">
 								${state.data.Paused ?
-									html`<button onclick=${() => this.pause(true)}>Unpause Feed</button>` :
-									html`<button onclick=${() => this.pause(false)}>Pause Feed</button>`
+									html`<button onclick=${() => this.pause(false)}>Unpause Feed</button>` :
+									html`<button onclick=${() => this.pause(true)}>Pause Feed</button>`
 								}
 								<button onclick=${() => this.delete()} class=${state.delete ? "confirm" : ""}>Delete Feed</button>
 							</span>
@@ -64,7 +64,7 @@ class FeedDetails extends AuthedComponent {
 		}
 		fetch(url).then(r => {
 			if (r.ok) {
-				this.update(props.id)
+				this.update(this.props.id)
 			}
 		})
 	}
