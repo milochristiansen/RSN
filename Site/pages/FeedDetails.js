@@ -12,7 +12,7 @@ class FeedDetails extends AuthedComponent {
 	
 		this.state = {data: {}, articles: [], delete: false, dataOk: null, artOk: null}
 
-		this.update(props.id)
+		this.update(props.id, true)
 	}
 
 	renderAuthed(auth, props, state) {
@@ -64,7 +64,7 @@ class FeedDetails extends AuthedComponent {
 		}
 		fetch(url).then(r => {
 			if (r.ok) {
-				this.update(this.props.id)
+				this.update(this.props.id, false)
 			}
 		})
 	}
@@ -102,7 +102,7 @@ class FeedDetails extends AuthedComponent {
 		return "/"
 	}
 
-	update(id) {
+	update(id, all) {
 		fetch("/api/feed/details?id="+id, {
 			credentials: 'include'
 		})
@@ -121,6 +121,10 @@ class FeedDetails extends AuthedComponent {
 			.then(data => {
 				this.setState({data: data, dataOk: true})
 			})
+
+		if (!all) {
+			return
+		}
 
 		fetch("/api/feed/articles?id="+id, {
 			credentials: 'include'
