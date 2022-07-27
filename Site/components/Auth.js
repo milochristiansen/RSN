@@ -17,7 +17,8 @@ class AuthProvider extends Component {
 			this.state = {auth: {ok: false, refresh: this.refresh, whoami: null}}
 		}
 
-		this.refresh()
+		// Do not refresh here. Otherwise we get double refreshing on initial page load.
+		//this.refresh()
 	}
 
 	refresh = () => {
