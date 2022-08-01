@@ -79,7 +79,7 @@ class FeedUnreadRow extends Component {
 				this.setState(state => ({read: {...state.read, [id]: true}}))
 			}
 		})
-		window.open(this.data.URL, "_blank", "noreferrer");
+		window.open(this.props.data.URL, "_blank", "noreferrer");
 		evnt.preventDefault()
 	}
 
