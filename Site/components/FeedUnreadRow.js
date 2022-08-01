@@ -79,8 +79,6 @@ class FeedUnreadRow extends Component {
 				this.setState(state => ({read: {...state.read, [id]: true}}))
 			}
 		})
-		window.open(this.props.data.URL, "_blank", "noreferrer");
-		evnt.preventDefault()
 	}
 
 	render(props, state) {
@@ -97,6 +95,7 @@ class FeedUnreadRow extends Component {
 						<a
 							href=${item.URL}
 							rel="noreferrer"
+							target="_blank"
 							class="article-link"
 							onclick=${(evnt) => this.openArticle(evnt, item.ID)}
 							native
