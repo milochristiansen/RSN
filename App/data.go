@@ -307,13 +307,25 @@ func FeedPause(l *sessionlogger.Logger, user, feed string) int {
 	return http.StatusOK
 }
 
-// //api/feed/unpause
+// /api/feed/unpause
 // =====================================================================================================================
 
 func FeedUnpause(l *sessionlogger.Logger, user, feed string) int {
 	_, err := Queries["FeedUnpause"].Preped.Exec(user, feed)
 	if err != nil {
 		l.E.Printf("Failed unpausing feed %v, error: %v\n", feed, err)
+		return http.StatusInternalServerError
+	}
+	return http.StatusOK
+}
+
+// /api/feed/rename
+// =====================================================================================================================
+
+func FeedRename(l *sessionlogger.Logger, user, feed, name string) int {
+	_, err := Queries["FeedRename"].Preped.Exec(user, feed, name)
+	if err != nil {
+		l.E.Printf("Failed renaming feed %v, error: %v\n", feed, err)
 		return http.StatusInternalServerError
 	}
 	return http.StatusOK

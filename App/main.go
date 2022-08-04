@@ -212,6 +212,33 @@ func main() {
 		w.WriteHeader(FeedUnpause(l, user.UID, feed))
 	})
 
+	// /api/feed/rename
+	http.HandleFunc("/api/feed/rename", func(w http.ResponseWriter, r *http.Request) {
+		l := sessionlogger.NewSessionLogger("/api/feed/rename")
+
+		user, status := GetSessionData(l, w, r)
+		if status != http.StatusOK {
+			w.WriteHeader(status)
+			return
+		}
+
+		feed := r.FormValue("id")
+		if feed == "" {
+			l.W.Printf("Missing feed ID.\n")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		name := r.FormValue("name")
+		if name == "" {
+			l.W.Printf("Missing feed name.\n")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(FeedRename(l, user.UID, feed, name))
+	})
+
 	// /api/article/read
 	http.HandleFunc("/api/article/read", func(w http.ResponseWriter, r *http.Request) {
 		l := sessionlogger.NewSessionLogger("/api/article/read")

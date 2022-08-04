@@ -192,6 +192,10 @@ var Queries = map[string]*queryHolder{
 	"FeedUnpause": {`
 		delete from PausedFlags where User = ?1 and Feed = ?2;
 	`, nil},
+	// /api/feed/rename
+	"FeedRename": {`
+		update Subscribed set Name = ?3 where User = ?1 and Feed = ?2;
+	`, nil},
 
 	// /api/article/read
 	"ArticleRead": {`
