@@ -74,9 +74,11 @@ class FeedUnreadRow extends Component {
 	}
 
 	openArticle(evnt, id) {
+		// Mark the article read in our app immediately, then mark it unread again if the API call to mark it read fails.
+		this.setState(state => ({read: {...state.read, [id]: true}}))
 		fetch(`/api/article/read?id=${id}`).then(r => {
-			if (r.ok) {
-				this.setState(state => ({read: {...state.read, [id]: true}}))
+			if (!r.ok) {
+				this.setState(state => ({read: {...state.read, [id]: false}}))
 			}
 		})
 	}
