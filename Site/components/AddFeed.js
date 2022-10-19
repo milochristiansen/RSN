@@ -22,8 +22,8 @@ class AddFeed extends Component {
 			method: "POST",
 			credentials: "include",
 			body: JSON.stringify({
-				URL: String(this.url),
-				Name: String(this.name)
+				URL: String(this.state.url),
+				Name: String(this.state.name)
 			})
 		})
 			.then(function(res) {
