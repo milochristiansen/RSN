@@ -26,7 +26,7 @@ class AddFeed extends Component {
 				Name: String(this.state.name)
 			})
 		})
-			.then(function(res) {
+			.then((res) => {
 				if (res.ok) {
 					this.setState({addstate: true, url: "", name: ""})
 					setTimeout(() => (this.setState({addstate: null})), 3000);
