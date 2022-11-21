@@ -411,9 +411,10 @@ func GetUnread(l *sessionlogger.Logger, user string) []*UnreadData {
 			})
 		}
 
-		// Send no more than 5 articles, with the break between the first four and the last one represented by a null.
-		if len(data[i].Articles) == 4 {
-			data[i].Articles = append(data[i].Articles, nil)
+		// Send no more than 5 articles, with the break between the first four and the last one represented by a null
+		// (only when there are more than 5).
+		if len(data[i].Articles) == 5 {
+			data[i].Articles[4] = nil
 			data[i].Articles = append(data[i].Articles, a)
 			continue
 		}
