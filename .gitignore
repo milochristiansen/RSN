@@ -10,6 +10,7 @@
 *.keys
 keys.go
 *.pem
+token-*.json
 
 # Data files
 *.sql

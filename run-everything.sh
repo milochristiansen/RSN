@@ -14,7 +14,15 @@ docker start rsn-app || docker run -d \
 	--name rsn-app \
 	rsn-app
 
-# And then do the same with NGINX
+# Then the twitch bot
+docker start twitch-bot || docker run -d \
+	-v $PWD/Bot:/app/ \
+	--restart unless-stopped \
+	--network common \
+	--name twitch-bot \
+	twitch-bot
+
+# And finally the NGINX proxy
 docker start nginx || docker run -d -p 443:443 \
 	-v $PWD/NGINX:/etc/nginx/ \
 	-v $PWD/Site:/usr/share/nginx/html \
