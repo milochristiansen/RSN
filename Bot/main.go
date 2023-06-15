@@ -269,6 +269,7 @@ func SSEHandler(w http.ResponseWriter, r *http.Request) {
 	messages := make(chan []byte, 1)
 	Broker.NewClients <- messages
 	defer func(){
+		l.I.Println("Closing event send loop.")
 		Broker.ClosingClients <- messages
 	}()
 
@@ -277,6 +278,7 @@ func SSEHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 
+	l.I.Println("Starting event send loop.")
 	for {
 		select {
 		case <-r.Context().Done():
