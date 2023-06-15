@@ -1,5 +1,5 @@
 
-FROM golang:1.18-alpine3.16 AS build-go
+FROM golang:1.20-alpine3.17 AS build-go
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ RUN go build -o server.bin
 
 ########################################################################################################################
 
-FROM alpine:3.16
+FROM alpine:3.17
 
 WORKDIR /app
 
