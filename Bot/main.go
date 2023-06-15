@@ -147,6 +147,7 @@ func main() {
 	}
 
 	// Handle event webhooks.
+	l.I.Println("Creating webhook handlers.")
 	handler := esf.NewSubHandler(true, []byte("veryverysecret"))
 	handler.HandleChannelSubscribe = func(h *esb.ResponseHeaders, event *esb.EventChannelSubscribe) {
 		l := sessionlogger.NewSessionLogger("webhook-sub")
@@ -195,6 +196,7 @@ func main() {
 	http.Handle("/twitch/webhook", handler)
 	http.HandleFunc("/twitch/sse", SSEHandler)
 
+	l.I.Println("Starting HTTP server.")
 	err = http.ListenAndServe(":80", nil)
 	if err != nil {
 		l.E.Println(err)
@@ -236,7 +238,6 @@ func init() {
 			select {
 			case msg := <- Broker.Messages:
 				// New message, send to all clients.
-				fmt.Printf("%s\n", msg)
 				for client := range Broker.clients {
 					client <- msg
 				}
@@ -248,7 +249,6 @@ func init() {
 				delete(Broker.clients, client)
 				timeout.Reset(dur)
 			case <-timeout.C:
-				fmt.Println("ping")
 				for client := range Broker.clients {
 					client <- []byte(": ping")
 				}
