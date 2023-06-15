@@ -16,7 +16,8 @@ docker start rsn-app || docker run -d \
 
 # Then the twitch bot
 docker start twitch-bot || docker run -d \
-	-v $PWD/Bot:/app/ \
+	-v $PWD/Bot/token-master.json:/app/token-master.json \
+	-v $PWD/Bot/token-bot.json:/app/token-bot.json \
 	--restart unless-stopped \
 	--network common \
 	--name twitch-bot \
