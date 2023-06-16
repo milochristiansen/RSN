@@ -102,6 +102,10 @@ func main() {
 		"stream.offline": esb.ConditionStreamOffline{BroadcasterUserID: ChannelID},
 		"stream.online": esb.ConditionStreamOnline{BroadcasterUserID: ChannelID},
 	}
+	// If nothing is listed, uses "1"
+	var subVersions = map[string]string{
+		"channel.follow": "2",
+	}
 
 	// Get a list of all current eventsub subscriptions, then go down the list unsubscribing anything we don't want
 	// and finally subscribing anything we want but don't have.
@@ -137,9 +141,10 @@ func main() {
 			l.I.Printf("Subscribing to %v event.\n", sub)
 			_, err := esclient.Subscribe(context.Background(), &esf.SubRequest{
 				Type: sub,
-				Secret: "veryverysecret",
+				Secret: EventSubSecret,
 				Callback: "https://httpscolonslashslashwww.com/twitch/webhook",
 				Condition: cond,
+				Version: subVersions[sub],
 			})
 			if err != nil {
 				l.E.Println("EventSub Subscribe Error:", err)
@@ -149,7 +154,7 @@ func main() {
 
 	// Handle event webhooks.
 	l.I.Println("Creating webhook handlers.")
-	handler := esf.NewSubHandler(true, []byte("veryverysecret"))
+	handler := esf.NewSubHandler(true, []byte(EventSubSecret))
 	handler.HandleChannelSubscribe = func(h *esb.ResponseHeaders, event *esb.EventChannelSubscribe) {
 		l := sessionlogger.NewSessionLogger("webhook-sub")
 		if event.IsGift {
