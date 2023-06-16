@@ -92,15 +92,15 @@ func main() {
 	}()
 
 	var desiredSubs = map[string]any{
-		//"channel.channel_points_custom_reward_redemption.add": esb.ConditionChannelPointsRewardRedemptionAdd{BroadcasterUserID: ChannelID},
-		//"channel.cheer": esb.ConditionChannelCheer{BroadcasterUserID: ChannelID},
-		//"channel.follow": esb.ConditionChannelFollow{BroadcasterUserID: ChannelID},
-		//"channel.raid": esb.ConditionChannelRaid{ToBroadcasterUserID: ChannelID},
-		//"channel.subscribe": esb.ConditionChannelSubscribe{BroadcasterUserID: ChannelID},
-		//"channel.subscription.gift": esb.ConditionChannelSubscriptionGift{BroadcasterUserID: ChannelID},
-		//"channel.subscription.message": esb.ConditionChannelSubscriptionMessage{BroadcasterUserID: ChannelID},
-		//"stream.offline": esb.ConditionStreamOffline{BroadcasterUserID: ChannelID},
-		//"stream.online": esb.ConditionStreamOnline{BroadcasterUserID: ChannelID},
+		"channel.channel_points_custom_reward_redemption.add": esb.ConditionChannelPointsRewardRedemptionAdd{BroadcasterUserID: ChannelID},
+		"channel.cheer": esb.ConditionChannelCheer{BroadcasterUserID: ChannelID},
+		"channel.follow": esb.ConditionChannelFollow{BroadcasterUserID: ChannelID},
+		"channel.raid": esb.ConditionChannelRaid{ToBroadcasterUserID: ChannelID},
+		"channel.subscribe": esb.ConditionChannelSubscribe{BroadcasterUserID: ChannelID},
+		"channel.subscription.gift": esb.ConditionChannelSubscriptionGift{BroadcasterUserID: ChannelID},
+		"channel.subscription.message": esb.ConditionChannelSubscriptionMessage{BroadcasterUserID: ChannelID},
+		"stream.offline": esb.ConditionStreamOffline{BroadcasterUserID: ChannelID},
+		"stream.online": esb.ConditionStreamOnline{BroadcasterUserID: ChannelID},
 	}
 
 	// Get a list of all current eventsub subscriptions, then go down the list unsubscribing anything we don't want
@@ -133,6 +133,7 @@ func main() {
 	}
 	for sub, cond := range desiredSubs {
 		if cond != nil {
+			// We want it and we don't have it
 			l.I.Printf("Subscribing to %v event.\n", sub)
 			_, err := esclient.Subscribe(context.Background(), &esf.SubRequest{
 				Type: sub,
