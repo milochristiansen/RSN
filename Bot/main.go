@@ -129,7 +129,7 @@ func main() {
 		} else {
 			// We have it and we don't want it :(
 			l.I.Printf("Unsubscribing from %v event.\n", sub.Type)
-			err := esclient.Unsubscribe(context.Background(), sub.Type)
+			err := esclient.Unsubscribe(context.Background(), sub.ID)
 			if err != nil {
 				l.E.Println("EventSub Unsubscribe Error:", err)
 			}
