@@ -85,10 +85,6 @@ class Notification extends Component {
 
 			.inner {
 				width: 100%;
-				margin: 0;
-				position: relative;
-				top: 50%;
-			 	transform: translateY(-50%);
 			}
 
 			h2, p {

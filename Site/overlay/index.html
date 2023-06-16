@@ -76,6 +76,29 @@
 		
 		evtSource.addEventListener("points", (e) => {
 			// Trigger sounds.
+			console.log(e)
+			let data = JSON.parse(e.data)
+			let snd = null
+			switch (data.Reward) {
+			case "Ring for Service!":
+				snd = new Audio("/overlay/ding.mp3")
+				snd.play();
+				break;
+			case "2A":
+				snd = new Audio("/overlay/ak47s.mp3")
+				snd.volume = 0.6
+				snd.play();
+				break;
+			case "Enemy on the Horizon":
+				snd = new Audio("/overlay/CapitalShip.mp3")
+				snd.play();
+				break;
+			case "Ring for Service!":
+				snd = new Audio("/overlay/TeralystSpawn.mp3")
+				snd.volume = 0.5
+				snd.play();
+				break;
+			}
 		})
 
 		css`
