@@ -94,7 +94,7 @@ func main() {
 	var desiredSubs = map[string]any{
 		"channel.channel_points_custom_reward_redemption.add": esb.ConditionChannelPointsRewardRedemptionAdd{BroadcasterUserID: ChannelID},
 		"channel.cheer": esb.ConditionChannelCheer{BroadcasterUserID: ChannelID},
-		"channel.follow": esb.ConditionChannelFollow{BroadcasterUserID: ChannelID},
+		"channel.follow": map[string]any{"broadcaster_user_id": ChannelID, "moderator_user_id": ChannelID},
 		"channel.raid": esb.ConditionChannelRaid{ToBroadcasterUserID: ChannelID},
 		"channel.subscribe": esb.ConditionChannelSubscribe{BroadcasterUserID: ChannelID},
 		"channel.subscription.gift": esb.ConditionChannelSubscriptionGift{BroadcasterUserID: ChannelID},
