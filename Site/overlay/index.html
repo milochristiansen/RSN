@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+
+		<title>Twitch Overlay</title>
+
+		<script type="importmap">
+		{"imports": {
+			"htm": "https://unpkg.com/htm@3.0.4/dist/htm.module.js?module",
+			"csz": "https://unpkg.com/csz@1.2.0/index.js?module",
+
+			"preact": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module",
+			"preact/compat": "https://unpkg.com/preact@10.8.2/compat/dist/compat.mjs",
+			"preact/hooks": "https://unpkg.com/preact@10.8.2/hooks/dist/hooks.mjs",
+			"preact/debug": "https://unpkg.com/preact@10.8.2/debug/dist/debug.mjs",
+			"preact/devtools": "https://unpkg.com/preact@10.8.2/devtools/dist/devtools.mjs",
+
+			"preact-router": "https://unpkg.com/preact-router@4.0.1/dist/preact-router.module.js?module",
+
+			"nanoid": "https://unpkg.com/nanoid@3.1.23/nanoid.js?module",
+
+			"https://unpkg.com/preact@%3E=10/hooks?module": "https://unpkg.com/preact@10.8.2/hooks/dist/hooks.mjs",
+			"https://unpkg.com/preact@latest?module": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module",
+			"https://unpkg.com/preact@%3E=10?module": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module",
+
+			"preact-router@latest?module": "https://unpkg.com/preact-router@4.0.1/dist/preact-router.module.js?module",
+			"preact-router@4.0.1?module": "https://unpkg.com/preact-router@4.0.1/dist/preact-router.module.js?module"
+		}}
+		</script>
+	</head>
+	<body>
+		<script type="module">
+		import { html, css, render, createRef } from "/header.js"
+
+		const evtSource = new EventSource("https://httpscolonslashslashwww.com/twitch/sse");
+		var eventQueue = []
+		var currentlyShowing = null
+		var display = createRef();
+
+		import Notification from "/overlay/Notification.js"
+
+		function doqueue(adding) {
+			// We are busy, queue new item for later.
+			if (currentlyShowing != null && adding != null) {
+				eventQueue.push(adding)
+				return
+			}
+
+			// We just finished showing an item, display the next one.
+			if (currentlyShowing != null && adding == null) {
+				if (eventQueue.length == 0) {
+					currentlyShowing = null
+					display.current.Update(currentlyShowing)
+					return
+				}
+
+				currentlyShowing = eventQueue.shift()
+				display.current.Update(currentlyShowing)
+				setTimeout(() => doqueue(null), 5000);
+				return
+			}
+
+			// We are not showing an item, just display the incoming.
+			currentlyShowing = adding
+			display.current.Update(currentlyShowing)
+			setTimeout(() => doqueue(null), 5000);
+		}
+
+		evtSource.addEventListener("sub", (e) => {doqueue({"Type": "sub", "Data": e.data})})
+		evtSource.addEventListener("gift", (e) => {doqueue({"Type": "gift", "Data": e.data})})
+		evtSource.addEventListener("bits", (e) => {doqueue({"Type": "bits", "Data": e.data})})
+		evtSource.addEventListener("follow", (e) => {doqueue({"Type": "follow", "Data": e.data})})
+		evtSource.addEventListener("raid", (e) => {doqueue({"Type": "raid", "Data": e.data})})
+		
+		evtSource.addEventListener("points", (e) => {
+			// Trigger sounds.
+		})
+
+		css`
+			:global(html) {
+				--primary-color: #9a97f3;
+				--secondary-color: #818cab;
+				--font-color: #e1e1ff;
+				--bg-color: #161625;
+				--heading-color: #818cab;
+				--on-color: #22bb22;
+				--off-color: #818cab;
+				--warning-color: #f56329;
+			}
+
+			:global(body) {
+				width: 500px;
+				height: 200px;
+			}
+
+			:global(*) {
+				box-sizing: border-box;
+			}
+
+			:global(a) {
+				color: var(--font-color);
+			}
+
+			:global(h1),
+			:global(h2),
+			:global(h3),
+			:global(h4) {
+				color: var(--heading-color);
+			}
+
+			:global(p),
+			:global(span) {
+				color: var(--font-color);
+			}
+		`
+
+		render(html`
+			<${Notification} ref=${display}/>
+		`, document.body)
+		</script>
+	</body>
+</html>
