@@ -181,6 +181,7 @@ func main() {
 	}
 	handler.HandleChannelFollow = func(h *esb.ResponseHeaders, event *esb.EventChannelFollow) {
 		l := sessionlogger.NewSessionLogger("webhook-follow")
+		client.Say(Channel, fmt.Sprintf("Thank you for the follow %v!", event.UserName))
 		SendEventMsg("follow", map[string]any{"Name": event.UserName})
 		l.I.Printf("%v just followed!\n", event.UserName)
 	}
