@@ -171,8 +171,8 @@ func main() {
 	}
 	handler.HandleChannelSubscriptionMessage = func(h *esb.ResponseHeaders, event *esb.EventChannelSubscriptionMessage) {
 		l := sessionlogger.NewSessionLogger("webhook-resub")
-		SendEventMsg("sub", map[string]any{"Name": event.UserName, "Months": event.DurationMonths})
-		l.I.Printf("%v just resubscribed for %v months!\n", event.UserName, event.DurationMonths)
+		SendEventMsg("sub", map[string]any{"Name": event.UserName, "Months": event.CumulativeTotal})
+		l.I.Printf("%v just resubscribed for %v months!\n", event.UserName, event.CumulativeTotal)
 	}
 	handler.HandleChannelCheer = func(h *esb.ResponseHeaders, event *esb.EventChannelCheer) {
 		l := sessionlogger.NewSessionLogger("webhook-cheer")
