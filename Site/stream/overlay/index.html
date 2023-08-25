@@ -39,7 +39,7 @@
 		var currentlyShowing = null
 		var display = createRef();
 
-		import Notification from "/overlay/Notification.js"
+		import Notification from "/stream/overlay/Notification.js"
 
 		function doqueue(adding) {
 			// We are busy, queue new item for later.
@@ -81,25 +81,25 @@
 			let snd = null
 			switch (data.Reward) {
 			case "Ring for Service!":
-				snd = new Audio("/overlay/ding.mp3")
+				snd = new Audio("/stream/assets/ding.mp3")
 				snd.play();
 				break;
 			case "2A":
-				snd = new Audio("/overlay/ak47s.mp3")
+				snd = new Audio("/stream/assets/ak47s.mp3")
 				snd.volume = 0.6
 				snd.play();
 				break;
 			case "Enemy on the Horizon":
-				snd = new Audio("/overlay/CapitalShip.mp3")
+				snd = new Audio("/stream/assets/CapitalShip.mp3")
 				snd.play();
 				break;
 			case "The Arrival":
-				snd = new Audio("/overlay/TeralystSpawn.mp3")
+				snd = new Audio("/stream/assets/TeralystSpawn.mp3")
 				snd.volume = 0.7
 				snd.play();
 				break;
 			case "Shork!":
-				snd = new Audio("/overlay/shork-long.mp3")
+				snd = new Audio("/stream/assets/shork-long.mp3")
 				snd.play();
 				break;
 			}

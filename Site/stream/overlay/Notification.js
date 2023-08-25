@@ -19,7 +19,7 @@ class Notification extends Component {
 						}
 						let data = JSON.parse(state.data.Data)
 
-						new Audio("/overlay/ding.mp3").play();
+						new Audio("/stream/assets/ding.mp3").play();
 						switch (state.data.Type) {
 						case "sub":
 							switch (data.Months) {
