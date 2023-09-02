@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"sync"
@@ -20,6 +21,8 @@ import (
 
 	esb "github.com/dnsge/twitch-eventsub-bindings"
 	esf "github.com/dnsge/twitch-eventsub-framework"
+
+	"github.com/tidwall/buntdb"
 )
 
 const (
@@ -34,6 +37,13 @@ func main() {
 	l.I.Println("Bot starting...")
 	
 	client := new(IRC)
+
+	db, err := buntdb.Open(":memory:")
+	if err != nil {
+		l.E.Println(err)
+		os.Exit(1)
+	}
+	defer db.Close()
 
 	l.I.Println("Creating message handler.")
 	client.OnMessage = func(i *IRCMsg) {
@@ -152,11 +162,25 @@ func main() {
 		}
 	}
 
+	errExists := errors.New("Duplicate Message Suppressed")
+
 	// Handle event webhooks.
 	l.I.Println("Creating webhook handlers.")
 	handler := esf.NewSubHandler(true, []byte(EventSubSecret))
 	handler.HandleChannelSubscribe = func(h *esb.ResponseHeaders, event *esb.EventChannelSubscribe) {
 		l := sessionlogger.NewSessionLogger("webhook-sub")
+
+		if db.Update(func(tx *buntdb.Tx) error {
+			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
+			if replaced {
+				return errExists
+			}
+			return nil
+		}) != nil {
+			l.I.Printf("Duplicate sub event.")
+			return
+		}
+
 		if event.IsGift {
 			// I don't care who got a gift. Screw them. Kappa
 			return
@@ -166,32 +190,104 @@ func main() {
 	}
 	handler.HandleChannelSubscriptionGift = func(h *esb.ResponseHeaders, event *esb.EventChannelSubscriptionGift) {
 		l := sessionlogger.NewSessionLogger("webhook-giftsub")
+
+		if db.Update(func(tx *buntdb.Tx) error {
+			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
+			if replaced {
+				return errExists
+			}
+			return nil
+		}) != nil {
+			l.I.Printf("Duplicate giftsub event.")
+			return
+		}
+
 		SendEventMsg("gift", map[string]any{"Name": event.UserName, "Count": event.Total})
 		l.I.Printf("%v just gifted %v subs!\n", event.UserName, event.Total)
 	}
 	handler.HandleChannelSubscriptionMessage = func(h *esb.ResponseHeaders, event *esb.EventChannelSubscriptionMessage) {
 		l := sessionlogger.NewSessionLogger("webhook-resub")
+
+		if db.Update(func(tx *buntdb.Tx) error {
+			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
+			if replaced {
+				return errExists
+			}
+			return nil
+		}) != nil {
+			l.I.Printf("Duplicate resub event.")
+			return
+		}
+
 		SendEventMsg("sub", map[string]any{"Name": event.UserName, "Months": event.CumulativeTotal})
 		l.I.Printf("%v just resubscribed for %v months!\n", event.UserName, event.CumulativeTotal)
 	}
 	handler.HandleChannelCheer = func(h *esb.ResponseHeaders, event *esb.EventChannelCheer) {
 		l := sessionlogger.NewSessionLogger("webhook-cheer")
+
+		if db.Update(func(tx *buntdb.Tx) error {
+			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
+			if replaced {
+				return errExists
+			}
+			return nil
+		}) != nil {
+			l.I.Printf("Duplicate bits event.")
+			return
+		}
+
 		SendEventMsg("bits", map[string]any{"Name": event.UserName, "Bits": event.Bits})
 		l.I.Printf("%v just cheered %v bits!\n", event.UserName, event.Bits)
 	}
 	handler.HandleChannelFollow = func(h *esb.ResponseHeaders, event *esb.EventChannelFollow) {
 		l := sessionlogger.NewSessionLogger("webhook-follow")
+
+		if db.Update(func(tx *buntdb.Tx) error {
+			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
+			if replaced {
+				return errExists
+			}
+			return nil
+		}) != nil {
+			l.I.Printf("Duplicate follow event.")
+			return
+		}
+
 		client.Say(Channel, fmt.Sprintf("Thank you for the follow %v!", event.UserName))
 		SendEventMsg("follow", map[string]any{"Name": event.UserName})
 		l.I.Printf("%v just followed!\n", event.UserName)
 	}
 	handler.HandleChannelRaid = func(h *esb.ResponseHeaders, event *esb.EventChannelRaid) {
 		l := sessionlogger.NewSessionLogger("webhook-raid")
+
+		if db.Update(func(tx *buntdb.Tx) error {
+			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
+			if replaced {
+				return errExists
+			}
+			return nil
+		}) != nil {
+			l.I.Printf("Duplicate raid event.")
+			return
+		}
+
 		SendEventMsg("raid", map[string]any{"Name": event.FromBroadcasterUserName, "Viewers": event.Viewers})
 		l.I.Printf("%v just arrived with %v raiders!\n", event.FromBroadcasterUserName, event.Viewers)
 	}
 	handler.HandleChannelPointsRewardRedemptionAdd = func(h *esb.ResponseHeaders, event *esb.EventChannelPointsRewardRedemptionAdd) {
 		l := sessionlogger.NewSessionLogger("webhook-redeem")
+
+		if db.Update(func(tx *buntdb.Tx) error {
+			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
+			if replaced {
+				return errExists
+			}
+			return nil
+		}) != nil {
+			l.I.Printf("Duplicate points event.")
+			return
+		}
+
 		SendEventMsg("points", map[string]any{"Name": event.UserName, "Reward": event.Reward.Title})
 		l.I.Printf("%v just redeemed %v!\n", event.UserName, event.Reward.Title)
 	}
