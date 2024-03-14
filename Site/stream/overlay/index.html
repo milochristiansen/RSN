@@ -118,7 +118,7 @@
 				})
 					.then(res => res.blob())
 					.then(blob => {
-						snd = new Audio(URL.createObjectURL(blob)).play();
+						snd = new Audio(URL.createObjectURL(blob));
 						snd.volume = 0.8
 						snd.play();
 					});
