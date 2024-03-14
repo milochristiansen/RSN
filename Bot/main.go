@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"fmt"
-	"io/ioutil"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -288,7 +287,7 @@ func main() {
 			return
 		}
 
-		SendEventMsg("points", map[string]any{"Name": event.UserName, "Reward": event.Reward.Title})
+		SendEventMsg("points", map[string]any{"Name": event.UserName, "Reward": event.Reward.Title, "Input": event.UserInput})
 		l.I.Printf("%v just redeemed %v!\n", event.UserName, event.Reward.Title)
 	}
 
@@ -427,7 +426,7 @@ func getToken(path string) (string, error) {
 	AuthData.Lock.Lock()
 	defer AuthData.Lock.Unlock()
 
-	tokenR, err := ioutil.ReadFile(path)
+	tokenR, err := os.ReadFile(path)
 	if err != nil {
 		return "", err
 	}
@@ -452,7 +451,7 @@ func getToken(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	ioutil.WriteFile(path, tokenB, 0666)
+	os.WriteFile(path, tokenB, 0666)
 	return token.AccessToken, nil
 }
 

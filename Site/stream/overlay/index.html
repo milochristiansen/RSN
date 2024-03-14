@@ -84,6 +84,10 @@
 				snd = new Audio("/stream/assets/ding.mp3")
 				snd.play();
 				break;
+			case "Show Shramp!":
+				snd = new Audio("/stream/assets/ding.mp3")
+				snd.play();
+				break;
 			case "2A":
 				snd = new Audio("/stream/assets/ak47s.mp3")
 				snd.volume = 0.6
@@ -106,6 +110,17 @@
 				snd = new Audio("/stream/assets/HaHa.mp3")
 				snd.volume = 0.8
 				snd.play();
+				break;
+			case "TTS Message":
+				fetch(`/api/tts`, {
+					method: "POST",
+					body: data.Input,
+				})
+					.then(res => res.blob())
+					.then(blob => {
+						snd = new Audio(URL.createObjectURL(blob)).play();
+						snd.play();
+					});
 				break;
 			}
 		})

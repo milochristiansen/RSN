@@ -23,6 +23,13 @@ docker start twitch-bot || docker run -d \
 	--name twitch-bot \
 	twitch-bot
 
+# And the TTS server.
+docker start twitch-tts || docker run
+	-e MODEL_DOWNLOAD_LINK=https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/high/en_US-lessac-high.onnx\?download=true \
+	--name twitch-tts \
+	-p 5000:5000 \
+	artibex/piper-http
+
 # And finally the NGINX proxy
 docker start nginx || docker run -d -p 443:443 \
 	-v $PWD/NGINX:/etc/nginx/ \
