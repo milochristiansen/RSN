@@ -112,7 +112,7 @@
 				snd.play();
 				break;
 			case "TTS Message":
-				fetch(`/api/tts`, {
+				fetch(`/twitch/tts`, {
 					method: "POST",
 					body: data.Input,
 				})
