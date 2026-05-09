@@ -1,9 +1,57 @@
 import { useState, useCallback } from "preact/hooks"
 import { html } from "/header.js"
+import { Style } from "/components/Style.js"
 
 import { ReadUnreadButton } from "/components/ReadUnreadButton.js"
 
-let rowcss = `
+const FeedLink = Style.a`
+	font-weight: bold;
+	color: var(--heading-color);
+
+	text-decoration: none;
+
+	margin-top: 5px;
+	margin-bottom: 5px;
+`
+
+const ArticleLink = Style.a`
+	width: 100%;
+	flex: 1;
+
+	text-decoration: none;
+
+	margin: 2px;
+	margin-right: 10px;
+	padding: 5px;
+`
+
+const LoadingDots = Style.strong`
+	color: var(--font-color);
+
+	font-size: 32px;
+	text-align: center;
+`
+
+const FeedName = Style.span`
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+`
+
+const ArticleItem = Style.span`
+	display: flex;
+	flex-direction: row;
+	position: relative;
+
+	border-width: 1px;
+	border-radius: 7px;
+	border-style: groove;
+	border-color: var(--heading-color);
+
+	margin-top: 2px;
+`
+
+const FeedRow = Style.div`
 	display: flex;
 	flex-direction: column;
 
@@ -13,53 +61,6 @@ let rowcss = `
 	border-radius: 5px;
 	border-style: outset;
 	border-color: var(--secondary-color);
-
-	.feed {
-		display: flex;
-		flex-direction: row;
-		justify-content: space-around;
-
-		a {
-			font-weight: bold;
-			color: var(--heading-color);
-
-			text-decoration: none;
-
-			margin-top: 5px;
-			margin-bottom: 5px;
-		}
-	}
-
-	strong {
-		color: var(--font-color);
-
-		font-size: 32px;
-		text-align: center;
-	}
-
-	.article {
-		display: flex;
-		flex-direction: row;
-		position: relative;
-
-		border-width: 1px;
-		border-radius: 7px;
-		border-style: groove;
-		border-color: var(--heading-color);
-
-		margin-top: 2px;
-
-		&-link {
-			width: 100%;
-			flex: 1;
-
-			text-decoration: none;
-
-			margin: 2px;
-			margin-right: 10px;
-			padding: 5px;
-		}
-	}
 `
 
 export const FeedUnreadRow = (props) => {
@@ -75,27 +76,25 @@ export const FeedUnreadRow = (props) => {
 	}, [])
 
 	return html`
-		<div style=${rowcss}>
-			<span class="feed"><a href=${`/read/feed/${props.data.FeedID}`}>${props.data.FeedName}</a></span>
-			${props.data.Articles.map(item => item === null ? html`<strong>\u00B7\u00B7\u00B7</strong>` : html`
-				<span
+		<${FeedRow}>
+			<${FeedName}><${FeedLink} href=${`/read/feed/${props.data.FeedID}`}>${props.data.FeedName}</${FeedLink}></${FeedName}>
+			${props.data.Articles.map(item => item === null ? html`<${LoadingDots}><//>` : html`
+				<${ArticleItem}
 					key=${item.ID}
-					class="article"
 					onread=${() => setRead(state => ({...state, [item.ID]: true}))}
 					onunread=${() => setRead(state => ({...state, [item.ID]: false}))}
 				>
-					<a
+					<${ArticleLink}
 						href=${item.URL}
 						rel="noreferrer"
 						target="_blank"
-						class="article-link"
 						onclick=${(evnt) => openArticle(evnt, item.ID)}
 						native
-					>${item.Title}</a>
+					>${item.Title}</${ArticleLink}>
 					<${ReadUnreadButton} state=${read[item.ID] === true} aid=${item.ID}/>
-				</span>
+				<//>
 			`)}
-		</div>
+		<//>
 	`
 }
 

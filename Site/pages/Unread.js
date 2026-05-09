@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks"
-import { html, css, Meta, Title } from "/header.js"
+import { html, Meta, Title, Style } from "/header.js"
 
 import { FeedUnreadRow } from "/components/FeedUnreadRow.js"
 import { Fallback } from "/components/Fallback.js"
@@ -47,7 +47,7 @@ export const Unread = (props) => {
 		<${Title} text="RSN - Unread" />
 		<${Meta} k="description" v="Really Simple Notifier unread articles page." />
 
-		<section name="unreadlist" class=${listCss}>
+		<${UnreadList}>
 			${(() => {
 				if (ok === true) {
 					return data.map(el => html`<${FeedUnreadRow} data=${el} key=${el.FeedID} />`)
@@ -57,13 +57,13 @@ export const Unread = (props) => {
 					return html`<${Fallback}>Loading feed data...<//>`
 				}
 			})()}
-		</section>
+		<//>
 	`
 }
 
 export default Unread
 
-let listCss = css`
+let UnreadList = Style.section`
 	display: flex;
 	flex-direction: column;
 `

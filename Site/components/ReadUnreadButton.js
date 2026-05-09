@@ -1,16 +1,11 @@
 import { useState, useRef, useCallback } from "preact/hooks"
 import { html } from "/header.js"
+import { Style } from "/components/Style.js"
 
-const OnRead = new Event('read', {bubbles: true});
-const OnUnread = new Event('unread', {bubbles: true});
+export const OnRead = new Event('read', {bubbles: true});
+export const OnUnread = new Event('unread', {bubbles: true});
 
-let modesCss = {
-	on: `--color: var(--on-color)`,
-	off: `--color: var(--off-color)`,
-	confirm: `--color: var(--warning-color)`,
-}
-
-let bodyCss = `
+const BtnContainer = Style.a`
 	height: 32px;
 	width: 32px;
 	position: relative;
@@ -18,18 +13,28 @@ let bodyCss = `
 	margin-top: auto;
 	margin-bottom: auto;
 
-	div {
-		position: absolute;
-		left: 10px;
-		top: 2px;
-
-		display: inline-block;
-		transform: rotate(45deg);
-		height: 24px;
-		width: 10px;
-		border-bottom: 5px solid var(--color);
-		border-right: 5px solid var(--color);
+	&.on {
+		--color: var(--on-color);
 	}
+	&.off {
+		--color: var(--off-color);
+	}
+	&.confirm {
+		--color: var(--warning-color);
+	}
+`
+
+const Checkmark = Style.div`
+	position: absolute;
+	left: 10px;
+	top: 2px;
+
+	display: inline-block;
+	transform: rotate(45deg);
+	height: 24px;
+	width: 10px;
+	border-bottom: 5px solid var(--color);
+	border-right: 5px solid var(--color);
 `
 
 export const ReadUnreadButton = (props) => {
@@ -66,18 +71,17 @@ export const ReadUnreadButton = (props) => {
 		})
 	}, [props.state, props.aid])
 
-	let cls = modesCss.off
+	let cls = "off"
 	if (props.state) {
-		cls = modesCss.on
+		cls = "on"
 	}
 	if (buttonstate) {
-		cls = modesCss.confirm
+		cls = "confirm"
 	}
 
 	return html`
-		<a ref=${root} href="/toggle-read" class=${[cls, bodyCss].join(" ")} onclick=${(e) => doclick(e)} native><div></div></a>
+		<${BtnContainer} ref=${root} href="/toggle-read" class=${cls} onclick=${(e) => doclick(e)} native><${Checkmark}><//><//>
 	`
 }
 
-export { ReadUnreadButton, OnRead, OnUnread }
 export default ReadUnreadButton

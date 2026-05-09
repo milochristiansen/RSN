@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks"
-import { html, css, Meta, Title } from "/header.js"
+import { html, Meta, Title, Style } from "/header.js"
 
 import { FeedRecentReadRow } from "/components/FeedRecentReadRow.js"
 import { Fallback } from "/components/Fallback.js"
@@ -47,7 +47,7 @@ export const RecentRead = (props) => {
 		<${Title} text="RSN - Recently Read" />
 		<${Meta} k="description" v="Really Simple Notifier recently read articles page." />
 
-		<section name="unreadlist" class=${listCss}>
+		<${RecentReadList}>
 			${(() => {
 				if (ok === true) {
 					return data.map(el => html`<${FeedRecentReadRow} data=${el} key=${el.ID}/>`)
@@ -57,13 +57,13 @@ export const RecentRead = (props) => {
 					return html`<${Fallback}>Loading article data...<//>`
 				}
 			})()}
-		</section>
+		<//>
 	`
 }
 
 export default RecentRead
 
-let listCss = css`
+let RecentReadList = Style.section`
 	display: flex;
 	flex-direction: column;
 `

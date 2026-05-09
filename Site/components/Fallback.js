@@ -1,7 +1,7 @@
+import { html } from "/header.js"
+import { Style } from "/components/Style.js"
 
-import { html, css } from "/header.js"
-
-const style = css`
+const FallbackContainer = Style.div`
 	width: 100%;
 	font-size: 32px;
 	text-align: center;
@@ -11,7 +11,7 @@ const style = css`
 
 const Fallback = (props) => {
 	return html`
-		<div class=${style}>${props.children}</div>
+		<${FallbackContainer}>${props.children}<//>
 	`
 }
 

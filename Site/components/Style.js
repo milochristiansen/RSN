@@ -1,5 +1,6 @@
 
-import { h, css } from "/header.js"
+import { h } from "/header.js"
+import css from "csz"
 
 // This is a very scuffed version of Styled Components.
 const Style = new Proxy(
@@ -52,25 +53,6 @@ const Style = new Proxy(
 		}
 	}
 )
-
-/*
-import Style from "/components/Style.js"
-
-// You can do things the basic way
-let Test = Style.p`
-	color: red;
-`
-
-// Or you can bind in some props with default values. Props specified at the usage site override these.
-let Link = Style.a.props({href:"https://example.com"})`
-	color: red;
-`
-
-<${Test}>Some red text.<//>
-
-// If for some reason you need to override the element type at the call site, you can use the special "as" prop.
-<${Test} as="div">Some red text.<//>
-*/
 
 export { Style }
 export default Style

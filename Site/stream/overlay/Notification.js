@@ -1,7 +1,22 @@
 import { useState, useCallback, forwardRef, useImperativeHandle } from "preact/hooks"
 import { html } from "/header.js"
+import { Style } from "/components/Style.js"
 
-let bodyCss = `
+const NotifTitle = Style.h2`
+	text-align: center;
+	font-size: 2.5em;
+`
+
+const NotifText = Style.p`
+	text-align: center;
+	font-size: 1.5em;
+`
+
+const NotifInner = Style.div`
+	width: 100%;
+`
+
+const NotifContainer = Style.div`
 	height: 100%;
 
 	border-style: solid;
@@ -9,23 +24,9 @@ let bodyCss = `
 	border-radius: 25px;
 	border-width: 10px;
 	background-color: var(--bg-color);
-
-	.inner {
-		width: 100%;
-	}
-
-	h2, p {
-		text-align: center;
-	}
-	h2 {
-		font-size: 2.5em;
-	}
-	p {
-		font-size: 1.5em;
-	}
 `
 
-let Notification = forwardRef(function Notification(props, ref) {
+export let Notification = forwardRef(function Notification(props, ref) {
 	let [data, setData] = useState({})
 
 	useImperativeHandle(ref, () => ({
@@ -40,8 +41,8 @@ let Notification = forwardRef(function Notification(props, ref) {
 	let display = data.Type == undefined ? "none" : "block"
 
 	return html`
-		<div style="${bodyCss}; display: ${display}">
-			<div class="inner">
+		<${NotifContainer} style=${{display}}>
+			<${NotifInner}>
 				${() => {
 					if (data.Type == undefined) {
 						return ""
@@ -54,44 +55,44 @@ let Notification = forwardRef(function Notification(props, ref) {
 						switch (d.Months) {
 						case 0:
 							return html`
-								<h2>Thank you ${d.Name}</h2>
-								<p>A shiny new subscriber!</p>
+								<${NotifTitle}>Thank you ${d.Name}</${NotifTitle}>
+								<${NotifText}>A shiny new subscriber!</${NotifText}>
 							`
 						case 1:
 							return html`
-								<h2>Thank you ${d.Name}</h2>
-								<p>Subscriber for a whole month!</p>
+								<${NotifTitle}>Thank you ${d.Name}</${NotifTitle}>
+								<${NotifText}>Subscriber for a whole month!</${NotifText}>
 							`
 						default:
 							return html`
-								<h2>Thank you ${d.Name}</h2>
-								<p>Subscriber for ${d.Months} months!</p>
+								<${NotifTitle}>Thank you ${d.Name}</${NotifTitle}>
+								<${NotifText}>Subscriber for ${d.Months} months!</${NotifText}>
 							`
 						}
 					case "gift":
 						return html`
-							<h2>Thank you ${d.Name}</h2>
-							<p>for gifting ${d.Count} subscriptions!</p>
+							<${NotifTitle}>Thank you ${d.Name}</${NotifTitle}>
+							<${NotifText}>for gifting ${d.Count} subscriptions!</${NotifText}>
 						`
 					case "bits":
 						return html`
-							<h2>Thank you ${d.Name}</h2>
-							<p>for the ${d.Bits} bits!</p>
+							<${NotifTitle}>Thank you ${d.Name}</${NotifTitle}>
+							<${NotifText}>for the ${d.Bits} bits!</${NotifText}>
 						`
 					case "follow":
 						return html`
-							<h2>Thank you ${d.Name}</h2>
-							<p>for the follow!</p>
+							<${NotifTitle}>Thank you ${d.Name}</${NotifTitle}>
+							<${NotifText}>for the follow!</${NotifText}>
 						`
 					case "raid":
 						return html`
-							<h2>Thank you ${d.Name}</h2>
-							<p>for raiding with ${d.Viewers} viewers!</p>
+							<${NotifTitle}>Thank you ${d.Name}</${NotifTitle}>
+							<${NotifText}>for raiding with ${d.Viewers} viewers!</${NotifText}>
 						`
 					}
 				}()}
-			</div>
-		</div>
+			<//>
+		<//>
 	`
 })
 

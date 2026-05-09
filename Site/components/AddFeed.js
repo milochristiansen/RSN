@@ -1,5 +1,6 @@
 import { useState, useCallback } from "preact/hooks"
 import { html } from "/header.js"
+import { Style } from "/components/Style.js"
 
 export const AddFeed = (props) => {
 	let [addState, setAddState] = useState(null)
@@ -55,7 +56,7 @@ export const AddFeed = (props) => {
 		status = html`<span>Feed added!</span>`
 	}
 
-	let bodyCss = `
+	const AddBody = Style.section`
 		margin-top: 5px;
 		margin-bottom: 10px;
 
@@ -63,7 +64,7 @@ export const AddFeed = (props) => {
 		margin-right: 10px;
 	`
 
-	let formCss = `
+	const AddForm = Style.form`
 		display: flex;
 		flex-direction: column;
 
@@ -73,16 +74,16 @@ export const AddFeed = (props) => {
 	`
 
 	return html`
-		<section name="addfeed" style=${bodyCss}>
+		<${AddBody}>
 			<div class="status">
 				${status}
 			</div>
-			<form onsubmit=${addfeed} style=${formCss}>
+			<${AddForm} onsubmit=${addfeed}>
 				<input type="text" placeholder="Feed URL" name="url" value=${url} onInput=${handleInput} />
 				<input type="text" placeholder="Feed Name" name="name" value=${name} onInput=${handleInput} />
 				<input type="submit" value="Subscribe Feed" />
-			</form>
-		</section>
+			<//>
+		<//>
 	`
 }
 

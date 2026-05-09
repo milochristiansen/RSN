@@ -1,9 +1,8 @@
 
 // This file is intended to be imported in all components, and provides all the basic dependencies 
 
-// Import my HTML and CSS processors
+// Import my HTML processors
 import htm from "htm"
-import css from "csz"
 
 // Import PReact
 import { h, render, createRef, createContext } from "preact"
@@ -15,5 +14,8 @@ const html = htm.bind(h)
 import { Meta } from "/components/Meta.js"
 import { Title } from "/components/Title.js"
 
+// Styled components thingy.
+import { Style } from "/components/Style.js"
+
 // Export all that stuff so the components can use it.
-export { html, css, h, render, createRef, createContext, Meta, Title }
+export { html, h, render, createRef, createContext, Meta, Title, Style }

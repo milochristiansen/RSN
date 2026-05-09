@@ -1,8 +1,41 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks"
-import { html, css, Meta, Title } from "/header.js"
+import { html, Meta, Title, Style } from "/header.js"
 
 import { Fallback } from "/components/Fallback.js"
 import { useAuthRedirect } from "/components/AuthRedirectHook.js"
+
+let FeedLabel = Style.span`
+
+`
+
+let StatusLabel = Style.span`
+	&.pause {
+		color: var(--secondary-color);
+	}
+	&.error {
+		color: var(--warning-color);
+	}
+`
+
+let FeedLink = Style.a`
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+
+	margin: 2px;
+	padding: 5px;
+
+	border-radius: 5px;
+	border-style: outset;
+	border-color: var(--secondary-color);
+
+	text-decoration: none;
+`
+
+let FeedList = Style.section`
+	display: flex;
+	flex-direction: column;
+`
 
 export const Feeds = (props) => {
 	useAuthRedirect("/")
@@ -41,17 +74,17 @@ export const Feeds = (props) => {
 		<${Title} text="RSN - Feeds" />
 		<${Meta} k="description" v="Really Simple Notifier subscribed feed list page." />
 
-		<section name="feedlist" class=${listCss}>
+		<${FeedList}>
 			${(() => {
 				if (ok === true) {
 					return data.map(el => html`
-						<a href="/read/feed/${el.ID}" key=${el.ID}>
-							<span>${el.Name}</span>
-							<span>
-								${el.ErrorCode != 200 ? html`<span class="error"> (error ${el.ErrorCode})</span>` : ""}
-								${el.Paused ? html`<span class="pause"> (paused)</span>` : ""}
-							</span>
-						</a>
+						<${FeedLink} href="/read/feed/${el.ID}" key=${el.ID}>
+							<${FeedLabel}>${el.Name}</${FeedLabel}>
+							<${FeedLabel}>
+								${el.ErrorCode != 200 ? html`<${StatusLabel} class="error"> (error ${el.ErrorCode})</${StatusLabel}>` : ""}
+								${el.Paused ? html`<${StatusLabel} class="pause"> (paused)</${StatusLabel}>` : ""}
+							</${FeedLabel}>
+						</${FeedLink}>
 					`)
 				} else if (ok !== null) {
 					return html`<${Fallback}>Error loading data: ${ok}<//>`
@@ -59,35 +92,8 @@ export const Feeds = (props) => {
 					return html`<${Fallback}>Loading feed data...<//>`
 				}
 			})()}
-		</section>
+		<//>
 	`
 }
 
 export default Feeds
-
-let listCss = css`
-	display: flex;
-	flex-direction: column;
-
-	a {
-		display: flex;
-		flex-direction: row;
-		justify-content: space-between;
-
-		margin: 2px;
-		padding: 5px;
-
-		border-radius: 5px;
-		border-style: outset;
-		border-color: var(--secondary-color);
-
-		text-decoration: none;
-
-		.pause {
-			color: var(--secondary-color);
-		}
-		.error {
-			color: var(--warning-color);
-		}
-	}
-`

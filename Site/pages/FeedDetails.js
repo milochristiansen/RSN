@@ -1,9 +1,68 @@
 import { useState, useCallback, useEffect } from "preact/hooks"
-import { html, css, Meta, Title } from "/header.js"
+import { html, Meta, Title, Style } from "/header.js"
 import { route } from 'preact-router';
 import { SingleArticleRow } from "/components/SingleArticleRow.js"
 import { Fallback } from "/components/Fallback.js"
 import { useAuthRedirect } from "/components/AuthRedirectHook.js"
+
+let DetailRow = Style.div`
+	width: 100%;
+	overflow: wrap;
+	overflow-wrap: break-word;
+
+	text-decoration: none;
+
+	padding-left: 10px;
+	padding-right: 10px;
+
+	margin-bottom: 10px;
+`
+
+let DetailError = Style.span`
+	color: var(--warning-color);
+`
+
+let ActionButton = Style.button`
+	padding: 5px;
+	padding-left: 30px;
+	padding-right: 30px;
+
+	margin-left: 10px;
+	margin-right: 10px;
+`
+
+let DeleteButton = Style.button`
+	padding: 5px;
+	padding-left: 30px;
+	padding-right: 30px;
+
+	margin-left: 10px;
+	margin-right: 10px;
+
+	&.confirm {
+		border-color: var(--warning-color);
+	}
+`
+
+let ButtonGroup = Style.span`
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+
+	margin-top: 10px;
+	margin-bottom: 15px;
+`
+
+let FeedArticleList = Style.section`
+	display: flex;
+	flex-direction: column;
+`
+
+let FeedDetailsSection = Style.section`
+	display: flex;
+	flex-direction: column;
+	text-align: center;
+`
 
 export const FeedDetails = (props) => {
 	useAuthRedirect("/")
@@ -108,25 +167,21 @@ export const FeedDetails = (props) => {
 		<${Title} text="RSN - Feed Details" />
 		<${Meta} k="description" v="Really Simple Notifier feed details page." />
 
-		<section name="feed-details" class=${detailsCss}>
+		<${FeedDetailsSection}>
 			${(() => {
 				if (dataOk === true) {
 					return html`
-						<h2 class="row">${data.Name} ${data.Paused && html`<span>(paused)</span>`}</h2>
-						<a class="row" target="_blank" rel="noreferrer" href=${data.URL} native>${data.URL}</a>
-						${data.ErrorCode != 200 ? html`<span class="row error">Feed currently down, code ${data.ErrorCode}</span>` : ""}
-						${isrr() && html`<a class="row" target="_blank" rel="noreferrer" href=${isrr()} native>Go to Fiction Page on Royal Road</a>`}
-						<span class="row buttons">
+						<${DetailRow}><h2>${data.Name} ${data.Paused && html`<span>(paused)</span>`}</h2></${DetailRow}>
+						<${DetailRow}><a target="_blank" rel="noreferrer" href=${data.URL} native>${data.URL}</a></${DetailRow}>
+						${data.ErrorCode != 200 ? html`<${DetailError}>Feed currently down, code ${data.ErrorCode}</${DetailError}>` : ""}
+						${isrr() && html`<${DetailRow}><a target="_blank" rel="noreferrer" href=${isrr()} native>Go to Fiction Page on Royal Road</a></${DetailRow}>`}
+						<${ButtonGroup}>
 							${data.Paused ?
-								html`<button onclick=${() => pause(false)}>Unpause Feed</button>` :
-								html`<button onclick=${() => pause(true)}>Pause Feed</button>`
+								html`<${ActionButton} onclick=${() => pause(false)}>Unpause Feed</${ActionButton}>` :
+								html`<${ActionButton} onclick=${() => pause(true)}>Pause Feed</${ActionButton}>`
 							}
-							<button onclick=${deleteFeed} class=${deleteConfirm ? "confirm" : ""}>Delete Feed</button>
-						</span>
-						<!--<span class="row buttons">
-							<input type="input" name="rename"></input>
-							<button onclick=${() => {}} class="">Rename Feed</button>
-						</span>-->
+							<${DeleteButton} onclick=${deleteFeed} class=${deleteConfirm ? "confirm" : ""}>Delete Feed</${DeleteButton}>
+						<//>
 					`
 				} else if (dataOk !== null) {
 					return html`<${Fallback}>Error loading data: ${dataOk}<//>`
@@ -134,8 +189,8 @@ export const FeedDetails = (props) => {
 					return html`<${Fallback}>Loading feed data...<//>`
 				}
 			})()}
-		</section>
-		<section name="feed-article-list" class=${listCss}>
+		<//>
+		<${FeedArticleList}>
 			${(() => {
 				if (artOk === true) {
 					return articles.map(el => html`<${SingleArticleRow} key=${el.ID} data=${el} />`)
@@ -145,58 +200,8 @@ export const FeedDetails = (props) => {
 					return html`<${Fallback}>Loading article data...<//>`
 				}
 			})()}
-		</section>
+		<//>
 	`
 }
 
 export default FeedDetails
-
-let detailsCss = css`
-	display: flex;
-	flex-direction: column;
-	text-align: center;
-
-	.row {
-		width: 100%;
-		overflow: wrap;
-		overflow-wrap: break-word;
-
-		text-decoration: none;
-
-		padding-left: 10px;
-		padding-right: 10px;
-	
-		margin-bottom: 10px;
-	}
-
-	.error {
-		color: var(--warning-color);
-	}
-
-	.buttons {
-		display: flex;
-		flex-direction: row;
-		justify-content: center;
-
-		margin-top: 10px;
-		margin-bottom: 15px;
-
-		button {
-			padding: 5px;
-			padding-left: 30px;
-			padding-right: 30px;
-
-			margin-left: 10px;
-			margin-right: 10px;
-		}
-	}
-
-	.confirm {
-		border-color: var(--warning-color);
-	}
-`
-
-let listCss = css`
-	display: flex;
-	flex-direction: column;
-`
