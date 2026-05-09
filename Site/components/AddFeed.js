@@ -1,89 +1,89 @@
+import { useState, useCallback } from "preact/hooks"
+import { html } from "/header.js"
 
-import { html, css, Component } from "/header.js"
+export const AddFeed = (props) => {
+	let [addState, setAddState] = useState(null)
+	let [url, setUrl] = useState("")
+	let [name, setName] = useState("")
 
-class AddFeed extends Component {
-	constructor() {
-		super();
-	
-		this.state = {addstate: null, url: "", name: ""}
-	}
-
-	addfeed(evnt) {
+	let addfeed = useCallback((evnt) => {
 		evnt.preventDefault()
 
-		if (this.state.url == "" || this.state.name == "") {
-			this.setState({addstate: false})
-			setTimeout(() => (this.setState({addstate: null})), 5000);
+		if (url == "" || name == "") {
+			setAddState(false)
+			setTimeout(() => setAddState(null), 5000);
 			return;
 		}
 
-		let self = this;
 		fetch("/api/feed/subscribe", {
 			method: "POST",
 			credentials: "include",
 			body: JSON.stringify({
-				URL: String(this.state.url),
-				Name: String(this.state.name)
+				URL: String(url),
+				Name: String(name)
 			})
 		})
 			.then((res) => {
 				if (res.ok) {
-					this.setState({addstate: true, url: "", name: ""})
-					setTimeout(() => (this.setState({addstate: null})), 3000);
+					setAddState(true)
+					setUrl("")
+					setName("")
+					setTimeout(() => setAddState(null), 3000);
 					return;
 				}
 				throw new Error(res.status);
 			})
 			.catch(error => {
 				console.error(error.message);
-				this.setState({addstate: false})
-				setTimeout(() => (this.setState({addstate: null})), 5000);
+				setAddState(false)
+				setTimeout(() => setAddState(null), 5000);
 			});
-	}
+	}, [url, name])
 
-	handleInput(e) {
-		this.setState({[e.target.name]: e.target.value})
-	}
-
-	render(props, state) {
-		let status = html`<span> </span>`
-		if (state.addstate === false) {
-			status = html`<span class="error">Failed adding feed.</span>`
-		} else if (state.addstate === true) {
-			status = html`<span>Feed added!</span>`
+	let handleInput = useCallback((e) => {
+		if (e.target.name === "url") {
+			setUrl(e.target.value)
+		} else if (e.target.name === "name") {
+			setName(e.target.value)
 		}
+	}, [])
 
-		return html`
-			<section name="addfeed" class=${this.css.body}>
-				<div class="status">
-					${status}
-				</div>
-				<form onsubmit=${e => this.addfeed(e)} class=${this.css.form}>
-					<input type="text" placeholder="Feed URL" name="url" value=${state.url} onInput=${e => this.handleInput(e)} />
-					<input type="text" placeholder="Feed Name" name="name" value=${state.name} onInput=${e => this.handleInput(e)} />
-					<input type="submit" value="Subscribe Feed" />
-				</form>
-			</section>
-		`
+	let status = html`<span> </span>`
+	if (addState === false) {
+		status = html`<span class="error">Failed adding feed.</span>`
+	} else if (addState === true) {
+		status = html`<span>Feed added!</span>`
 	}
 
-	css = {
-		body: css`
-			margin-top: 5px;
-			margin-bottom: 10px;
+	let bodyCss = `
+		margin-top: 5px;
+		margin-bottom: 10px;
 
-			margin-left: 10px;
-			margin-right: 10px;
-		`,
-		form: css`
-			display: flex;
-			flex-direction: column;
+		margin-left: 10px;
+		margin-right: 10px;
+	`
 
-			input {
-				margin-top: 2px;
-			}
-		`
-	}
+	let formCss = `
+		display: flex;
+		flex-direction: column;
+
+		input {
+			margin-top: 2px;
+		}
+	`
+
+	return html`
+		<section name="addfeed" style=${bodyCss}>
+			<div class="status">
+				${status}
+			</div>
+			<form onsubmit=${addfeed} style=${formCss}>
+				<input type="text" placeholder="Feed URL" name="url" value=${url} onInput=${handleInput} />
+				<input type="text" placeholder="Feed Name" name="name" value=${name} onInput=${handleInput} />
+				<input type="submit" value="Subscribe Feed" />
+			</form>
+		</section>
+	`
 }
 
 export default AddFeed

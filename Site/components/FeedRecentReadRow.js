@@ -1,9 +1,9 @@
+import { useState } from "preact/hooks"
+import { html } from "/header.js"
 
-import { html, css, Component, createRef } from "/header.js"
+import { ReadUnreadButton } from "/components/ReadUnreadButton.js"
 
-import ReadUnreadButton from "/components/ReadUnreadButton.js"
-
-const rowcss = css`
+let rowcss = `
 	display: flex;
 	flex-direction: row;
 
@@ -25,37 +25,27 @@ const rowcss = css`
 	}
 `
 
-class FeedRecentReadRow extends Component {
-	constructor() {
-		super();
-	
-		this.root = createRef()
+export const FeedRecentReadRow = (props) => {
+	let [read, setRead] = useState(true)
 
-		// We maintain a temporary cache of what articles have been marked read so that there is a visual indicator
-		// of which ones are read (and therefore will go away at the next update)
-		this.state = {read: true}
-	}
+	let item = props.data
 
-	render(props, state) {
-		let item = props.data
-
-		return html`
-			<div
-				onread=${() => this.setState(state => ({read: true}))}
-				onunread=${() => this.setState(state => ({read: false}))}
-				class=${rowcss}
-			>
-				<a
-					href=${item.URL}
-					target="_blank"
-					rel="noreferrer"
-					class="article"
-					native
-				>${item.FeedName} - ${item.Title}</a>
-				<${ReadUnreadButton} state=${this.state.read} aid=${item.ID}/>
-			</div>
-		`
-	}
+	return html`
+		<div
+			onread=${() => setRead(true)}
+			onunread=${() => setRead(false)}
+			style=${rowcss}
+		>
+			<a
+				href=${item.URL}
+				target="_blank"
+				rel="noreferrer"
+				class="article"
+				native
+			>${item.FeedName} - ${item.Title}</a>
+			<${ReadUnreadButton} state=${read} aid=${item.ID}/>
+		</div>
+	`
 }
 
 export default FeedRecentReadRow

@@ -6,14 +6,14 @@ import htm from "htm"
 import css from "csz"
 
 // Import PReact
-import { h, render, Component, createRef, createContext } from "preact"
+import { h, render, createRef, createContext } from "preact"
 
 // Bind PReact to the HTML processor
 const html = htm.bind(h)
 
 // These components allow you to modify the document title and meta tags on a per route basis.
-import Meta from "/components/Meta.js"
-import Title from "/components/Title.js"
+import { Meta } from "/components/Meta.js"
+import { Title } from "/components/Title.js"
 
 // Export all that stuff so the components can use it.
-export { html, css, h, render, Component, createRef, createContext, Meta, Title }
+export { html, css, h, render, createRef, createContext, Meta, Title }

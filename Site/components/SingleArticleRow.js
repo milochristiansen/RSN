@@ -1,9 +1,9 @@
+import { useState, useCallback } from "preact/hooks"
+import { html } from "/header.js"
 
-import { html, css, Component, createRef } from "/header.js"
+import { ReadUnreadButton } from "/components/ReadUnreadButton.js"
 
-import ReadUnreadButton from "/components/ReadUnreadButton.js"
-
-const rowcss = css`
+let rowcss = `
 	display: flex;
 	flex-direction: row;
 
@@ -25,34 +25,26 @@ const rowcss = css`
 	}
 `
 
-class SingleArticleRow extends Component {
-	constructor(props) {
-		super();
-	
-		this.root = createRef()
+export const SingleArticleRow = (props) => {
+	let [read, setRead] = useState(props.data.Read)
 
-		this.state = {read: props.data.Read}
-	}
-
-	render(props, state) {
-		return html`
-			<div
-				key=${props.data.ID}
-				onread=${() => this.setState(state => ({read: true}))}
-				onunread=${() => this.setState(state => ({read: false}))}
-				class=${rowcss}
-			>
-				<a
-					href=${props.data.URL}
-					target="_blank"
-					rel="noreferrer"
-					class="article"
-					native
-				>${props.data.Title}</a>
-				<${ReadUnreadButton} state=${this.state.read} aid=${props.data.ID}/>
-			</div>
-		`
-	}
+	return html`
+		<div
+			key=${props.data.ID}
+			onread=${() => setRead(true)}
+			onunread=${() => setRead(false)}
+			style=${rowcss}
+		>
+			<a
+				href=${props.data.URL}
+				target="_blank"
+				rel="noreferrer"
+				class="article"
+				native
+			>${props.data.Title}</a>
+			<${ReadUnreadButton} state=${read} aid=${props.data.ID}/>
+		</div>
+	`
 }
 
 export default SingleArticleRow

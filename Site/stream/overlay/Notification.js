@@ -1,103 +1,98 @@
+import { useState, useCallback, forwardRef, useImperativeHandle } from "preact/hooks"
+import { html } from "/header.js"
 
-import { html, css, Component } from "/header.js"
+let bodyCss = `
+	height: 100%;
 
-class Notification extends Component {
-	constructor(props) {
-		super();
+	border-style: solid;
+	border-color: var(--secondary-color);
+	border-radius: 25px;
+	border-width: 10px;
+	background-color: var(--bg-color);
 
-		this.state = {data: {}}
+	.inner {
+		width: 100%;
 	}
 
-	render(props, state) {
-		
-		return html`
-			<div class="${this.css.body}" style="display: ${state.data.Type == undefined ? "none" : "block"}">
-				<div class="inner">
-					${(() => {
-						if (state.data.Type == undefined) {
-							return ""
-						}
-						let data = JSON.parse(state.data.Data)
-
-						new Audio("/stream/assets/ding.mp3").play();
-						switch (state.data.Type) {
-						case "sub":
-							switch (data.Months) {
-							case 0:
-								return html`
-									<h2>Thank you ${data.Name}</h2>
-									<p>A shiny new subscriber!</p>
-								`
-							case 1:
-								return html`
-									<h2>Thank you ${data.Name}</h2>
-									<p>Subscriber for a whole month!</p>
-								`
-							default:
-								return html`
-									<h2>Thank you ${data.Name}</h2>
-									<p>Subscriber for ${data.Months} months!</p>
-								`
-							}
-						case "gift":
-							return html`
-								<h2>Thank you ${data.Name}</h2>
-								<p>for gifting ${data.Count} subscriptions!</p>
-							`
-						case "bits":
-							return html`
-								<h2>Thank you ${data.Name}</h2>
-								<p>for the ${data.Bits} bits!</p>
-							`
-						case "follow":
-							return html`
-								<h2>Thank you ${data.Name}</h2>
-								<p>for the follow!</p>
-							`
-						case "raid":
-							return html`
-								<h2>Thank you ${data.Name}</h2>
-								<p>for raiding with ${data.Viewers} viewers!</p>
-							`
-						}
-					})()}
-				</div>
-			</div>
-		`
+	h2, p {
+		text-align: center;
 	}
+	h2 {
+		font-size: 2.5em;
+	}
+	p {
+		font-size: 1.5em;
+	}
+`
 
-	Update(data) {
-		if (data == null || data == undefined) {
-			data = {}
+let Notification = forwardRef(function Notification(props, ref) {
+	let [data, setData] = useState({})
+
+	useImperativeHandle(ref, () => ({
+		Update(d) {
+			if (d == null || d == undefined) {
+				d = {}
+			}
+			setData(d)
 		}
-		this.setState({data: data})
-	}
+	}))
 
-	css = {
-		body: css`
-			height: 100%;
+	let display = data.Type == undefined ? "none" : "block"
 
-			border-style: solid;
-			border-color: var(--secondary-color);
-			border-radius: 25px;
-			border-width: 10px;
-			background-color: var(--bg-color);
+	return html`
+		<div style="${bodyCss}; display: ${display}">
+			<div class="inner">
+				${() => {
+					if (data.Type == undefined) {
+						return ""
+					}
+					let d = JSON.parse(data.Data)
 
-			.inner {
-				width: 100%;
-			}
-
-			h2, p {
-				text-align: center;
-			}
-			h2 {
-				font-size: 2.5em;
-			}
-			p {
-				font-size: 1.5em;
-			}
-		`
-	}
-}
+					new Audio("/stream/assets/ding.mp3").play();
+					switch (data.Type) {
+					case "sub":
+						switch (d.Months) {
+						case 0:
+							return html`
+								<h2>Thank you ${d.Name}</h2>
+								<p>A shiny new subscriber!</p>
+							`
+						case 1:
+							return html`
+								<h2>Thank you ${d.Name}</h2>
+								<p>Subscriber for a whole month!</p>
+							`
+						default:
+							return html`
+								<h2>Thank you ${d.Name}</h2>
+								<p>Subscriber for ${d.Months} months!</p>
+							`
+						}
+					case "gift":
+						return html`
+							<h2>Thank you ${d.Name}</h2>
+							<p>for gifting ${d.Count} subscriptions!</p>
+						`
+					case "bits":
+						return html`
+							<h2>Thank you ${d.Name}</h2>
+							<p>for the ${d.Bits} bits!</p>
+						`
+					case "follow":
+						return html`
+							<h2>Thank you ${d.Name}</h2>
+							<p>for the follow!</p>
+						`
+					case "raid":
+						return html`
+							<h2>Thank you ${d.Name}</h2>
+							<p>for raiding with ${d.Viewers} viewers!</p>
+						`
+					}
+				}()}
+			</div>
+		</div>
+	`
+})
 
 export default Notification

@@ -1,79 +1,69 @@
-
+import { useState, useCallback, useRef, useEffect } from "preact/hooks"
 import { html, css, Meta, Title } from "/header.js"
-import AuthedComponent from "/components/AuthedComponent.js"
 
-import FeedUnreadRow from "/components/FeedUnreadRow.js"
-import Fallback from "/components/Fallback.js"
+import { FeedUnreadRow } from "/components/FeedUnreadRow.js"
+import { Fallback } from "/components/Fallback.js"
+import { useAuthRedirect } from "/components/AuthRedirectHook.js"
 
-class Unread extends AuthedComponent {
-	constructor() {
-		super();
-	
-		this.interval = null
+export const Unread = (props) => {
+	useAuthRedirect("/")
 
-		this.state = {data: [], ok: null}
+	let [data, setData] = useState([])
+	let [ok, setOk] = useState(null)
+	let interval = useRef(null)
 
-		this.update(true)
-	}
-
-	renderAuthed(auth, props, state) {
-		return html`
-			<${Title} text="RSN - Unread" />
-			<${Meta} k="description" v="Really Simple Notifier unread articles page." />
-
-			<section name="unreadlist" class=${this.css.list}>
-				${(() => {
-					if (state.ok === true) {
-						return state.data.map(el => html`<${FeedUnreadRow} data=${el} key=${el.FeedID} />`)
-					} else if (state.ok !== null) {
-						return html`<${Fallback}>Error loading data: ${state.ok}<//>`
-					} else {
-						return html`<${Fallback}>Loading feed data...<//>`
-					}
-				})()}
-			</section>
-		`;
-	}
-
-	noAuthRedirect() {
-		return "/"
-	}
-
-	update() {
+	let update = useCallback(() => {
 		fetch("/api/getunread", {
 			credentials: 'include'
 		})
 			.then(r => {
 				if (!r.ok) {
-					this.setState(state => {
-						if (state.ok === null) {
-							return {ok: r.status}
+					setOk(s => {
+						if (s === null) {
+							return r.status
 						}
-						return {} // Change nothing
+						return s
 					})
 					throw new Error(r.status)
 				}
 				return r.json()
 			})
 			.then(data => {
-				this.setState({data: data, ok: true})
+				setData(data)
+				setOk(true)
 			})
-	}
+	}, [])
 
-	componentDidMount() {
-		this.interval = setInterval(() => this.update(), 60000)
-	}
+	useEffect(() => {
+		update()
+	}, [update])
 
-	componentWillUnmount() {
-		clearInterval(this.interval)
-	}
+	useEffect(() => {
+		interval.current = setInterval(() => update(), 60000)
+		return () => clearInterval(interval.current)
+	}, [update])
 
-	css = {
-		list: css`
-			display: flex;
-			flex-direction: column;
-		`
-	}
+	return html`
+		<${Title} text="RSN - Unread" />
+		<${Meta} k="description" v="Really Simple Notifier unread articles page." />
+
+		<section name="unreadlist" class=${listCss}>
+			${(() => {
+				if (ok === true) {
+					return data.map(el => html`<${FeedUnreadRow} data=${el} key=${el.FeedID} />`)
+				} else if (ok !== null) {
+					return html`<${Fallback}>Error loading data: ${ok}<//>`
+				} else {
+					return html`<${Fallback}>Loading feed data...<//>`
+				}
+			})()}
+		</section>
+	`
 }
 
 export default Unread
+
+let listCss = css`
+	display: flex;
+	flex-direction: column;
+`

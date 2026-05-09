@@ -1,9 +1,9 @@
+import { useState, useCallback } from "preact/hooks"
+import { html } from "/header.js"
 
-import { html, css, Component, createRef } from "/header.js"
+import { ReadUnreadButton } from "/components/ReadUnreadButton.js"
 
-import ReadUnreadButton from "/components/ReadUnreadButton.js"
-
-const rowcss = css`
+let rowcss = `
 	display: flex;
 	flex-direction: column;
 
@@ -62,52 +62,41 @@ const rowcss = css`
 	}
 `
 
-class FeedUnreadRow extends Component {
-	constructor() {
-		super();
-	
-		this.root = createRef()
+export const FeedUnreadRow = (props) => {
+	let [read, setRead] = useState({})
 
-		// We maintain a temporary cache of what articles have been marked read so that there is a visual indicator
-		// of which ones are read (and therefore will go away at the next update)
-		this.state = {read: {}}
-	}
-
-	openArticle(evnt, id) {
-		// Mark the article read in our app immediately, then mark it unread again if the API call to mark it read fails.
-		this.setState(state => ({read: {...state.read, [id]: true}}))
+	let openArticle = useCallback((evnt, id) => {
+		setRead(state => ({...state, [id]: true}))
 		fetch(`/api/article/read?id=${id}`).then(r => {
 			if (!r.ok) {
-				this.setState(state => ({read: {...state.read, [id]: false}}))
+				setRead(state => ({...state, [id]: false}))
 			}
 		})
-	}
+	}, [])
 
-	render(props, state) {
-		return html`
-			<div ref=${this.root} class=${rowcss}>
-				<span class="feed"><a href=${`/read/feed/${props.data.FeedID}`}>${props.data.FeedName}</a></span>
-				${props.data.Articles.map(item => item === null ? html`<strong>\u00B7\u00B7\u00B7</strong>` : html`
-					<span
-						key=${item.ID}
-						class="article"
-						onread=${() => this.setState(state => ({read: {...state.read, [item.ID]: true}}))}
-						onunread=${() => this.setState(state => ({read: {...state.read, [item.ID]: false}}))}
-					>
-						<a
-							href=${item.URL}
-							rel="noreferrer"
-							target="_blank"
-							class="article-link"
-							onclick=${(evnt) => this.openArticle(evnt, item.ID)}
-							native
-						>${item.Title}</a>
-						<${ReadUnreadButton} state=${this.state.read[item.ID] === true} aid=${item.ID}/>
-					</span>
-				`)}
-			</div>
-		`
-	}
+	return html`
+		<div style=${rowcss}>
+			<span class="feed"><a href=${`/read/feed/${props.data.FeedID}`}>${props.data.FeedName}</a></span>
+			${props.data.Articles.map(item => item === null ? html`<strong>\u00B7\u00B7\u00B7</strong>` : html`
+				<span
+					key=${item.ID}
+					class="article"
+					onread=${() => setRead(state => ({...state, [item.ID]: true}))}
+					onunread=${() => setRead(state => ({...state, [item.ID]: false}))}
+				>
+					<a
+						href=${item.URL}
+						rel="noreferrer"
+						target="_blank"
+						class="article-link"
+						onclick=${(evnt) => openArticle(evnt, item.ID)}
+						native
+					>${item.Title}</a>
+					<${ReadUnreadButton} state=${read[item.ID] === true} aid=${item.ID}/>
+				</span>
+			`)}
+		</div>
+	`
 }
 
 export default FeedUnreadRow

@@ -1,19 +1,15 @@
+import { useEffect, useState } from "preact/hooks"
 
-import { Component } from "preact"
-import { nanoid } from "nanoid"
+export const Title = (props) => {
+	let [old, setOld] = useState("")
 
-// This is like the Meta component, except instead of swapping tags it changes the document title.
-class Title extends Component {
-	state = { old: "" }
+	useEffect(() => {
+		setOld(document.title)
+		document.title = props.text
+		return () => { document.title = old }
+	}, [props.text])
 
-	componentDidMount() {
-		this.setState({ old: document.title })
-		document.title = this.props.text
-	}
-
-	componentWillUnmount() {
-		document.title = this.state.old
-	}
+	return null
 }
 
 export default Title

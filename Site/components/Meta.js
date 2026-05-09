@@ -1,25 +1,22 @@
+import { useEffect } from "preact/hooks"
 
-import { Component } from "preact"
-import { nanoid } from "nanoid"
+function uid() {
+	return `m${Date.now()}${Math.random().toString(36).slice(2, 7)}`
+}
 
-// This "Component" just adds a meta tag to the header of any page it is included on. When the component is unmounted,
-// the tag is removed.
-class Meta extends Component {
-	constructor() {
-		super();
-		this.state = { id: nanoid(5) };
-	}
-
-	componentDidMount() {
+export const Meta = (props) => {
+	useEffect(() => {
+		let id = uid()
 		const tag = document.createElement("meta");
-		tag.setAttribute(this.props.k, this.props.v);
-		tag.setAttribute(`data-${this.state.id}`, "");
+		tag.setAttribute(props.k, props.v);
+		tag.setAttribute(`data-${id}`, "");
 		document.head.appendChild(tag)
-	}
+		return () => {
+			Array.from(document.querySelectorAll(`[data-${id}]`)).map(el => el.parentNode.removeChild(el));
+		}
+	}, [props.k, props.v])
 
-	componentWillUnmount() {
-		Array.from(document.querySelectorAll(`[data-${this.state.id}]`)).map(el => el.parentNode.removeChild(el));
-	}
+	return null
 }
 
 export default Meta

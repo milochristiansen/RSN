@@ -39,9 +39,7 @@
 
 			"preact-router": "https://unpkg.com/preact-router@4.0.1/dist/preact-router.module.js?module",
 
-			"nanoid": "https://unpkg.com/nanoid@3.1.23/nanoid.js?module",
-
-			"https://unpkg.com/preact@%3E=10/hooks?module": "https://unpkg.com/preact@10.8.2/hooks/dist/hooks.mjs",
+		"https://unpkg.com/preact@%3E=10/hooks?module": "https://unpkg.com/preact@10.8.2/hooks/dist/hooks.mjs",
 			"https://unpkg.com/preact@latest?module": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module",
 			"https://unpkg.com/preact@%3E=10?module": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module",
 
@@ -58,15 +56,15 @@
 		import { lazy, Suspense } from "preact/compat"
 
 		import { AuthProvider, AuthConsumer } from '/components/Auth.js'
-		import LoginLogoutLink from '/components/LoginLogoutLink.js'
+		import { LoginLogoutLink } from '/components/LoginLogoutLink.js'
 
 		import { ThemeProvider, ThemeConsumer } from '/components/Theme.js'
 
-		import AddFeed from "/components/AddFeed.js"
+		import { AddFeed } from "/components/AddFeed.js"
 
-		import Fallback from "/components/Fallback.js"
+		import { Fallback } from "/components/Fallback.js"
 
-		import Main from '/pages/Main.js'
+		import { Main } from '/pages/Main.js'
 
 		// Handle max width properly.
 		window.addEventListener("resize", () => {
@@ -241,12 +239,12 @@
 			return props.children(props)
 		}
 
-		const Page404 = lazy(() => import('/pages/404.js'))
-		const LoginLanding = lazy(() => import('/pages/LoginLanding.js'))
-		const Unread = lazy(() => import('/pages/Unread.js'))
-		const RecentRead = lazy(() => import('/pages/RecentRead.js'))
-		const Feeds = lazy(() => import('/pages/Feeds.js'))
-		const FeedDetails = lazy(() => import('/pages/FeedDetails.js'))
+		const Page404 = lazy(() => import('/pages/404.js').then(m => m.E404))
+		const LoginLanding = lazy(() => import('/pages/LoginLanding.js').then(m => m.LoginLanding))
+		const Unread = lazy(() => import('/pages/Unread.js').then(m => m.Unread))
+		const RecentRead = lazy(() => import('/pages/RecentRead.js').then(m => m.RecentRead))
+		const Feeds = lazy(() => import('/pages/Feeds.js').then(m => m.Feeds))
+		const FeedDetails = lazy(() => import('/pages/FeedDetails.js').then(m => m.FeedDetails))
 
 		const LoadingDotDotDot = html`<${Fallback}>Loading Page...<//>`
 

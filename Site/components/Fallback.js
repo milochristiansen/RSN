@@ -9,10 +9,11 @@ const style = css`
 	color: var(--heading-color);
 `
 
-function Fallback(props) {
+const Fallback = (props) => {
 	return html`
 		<div class=${style}>${props.children}</div>
 	`
 }
 
+export { Fallback }
 export default Fallback
