@@ -50,7 +50,6 @@ let ButtonGroup = Style.span`
 	justify-content: center;
 
 	margin-top: 10px;
-	margin-bottom: 15px;
 `
 
 let FeedArticleList = Style.section`
@@ -64,6 +63,34 @@ let FeedDetailsSection = Style.section`
 	text-align: center;
 `
 
+let RenameForm = Style.form`
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+
+	width: 80%;
+
+	margin-left: auto;
+	margin-right: auto;
+
+	margin-top: 20px;
+`
+
+let RenameInput = Style.input`
+	padding: 5px;
+	margin-right: 10px;
+	flex: 1;
+`
+
+let RenameStatus = Style.span`
+	margin-top: 5px;
+	margin-bottom: 15px;
+
+	&.error {
+		color: var(--warning-color);
+	}
+`
+
 export const FeedDetails = (props) => {
 	useAuthRedirect("/")
 	let { route } = useLocation()
@@ -73,6 +100,8 @@ export const FeedDetails = (props) => {
 	let [deleteConfirm, setDeleteConfirm] = useState(false)
 	let [dataOk, setDataOk] = useState(null)
 	let [artOk, setArtOk] = useState(null)
+	let [renameValue, setRenameValue] = useState("")
+	let [renameMsg, setRenameMsg] = useState({ text: "", type: "" })
 
 	let update = useCallback((id, all) => {
 		fetch("/api/feed/details?id="+id, {
@@ -148,6 +177,33 @@ export const FeedDetails = (props) => {
 		setDeleteConfirm(false)
 	}, [props.id, deleteConfirm])
 
+	let renameFeed = useCallback((e) => {
+		e.preventDefault()
+		if (!renameValue.trim()) {
+			setRenameMsg({ text: "Name cannot be empty", type: "error" })
+			setTimeout(() => setRenameMsg({ text: "", type: "" }), 3000)
+			return
+		}
+
+		fetch(`/api/feed/rename?id=${props.id}&name=${encodeURIComponent(renameValue)}`, {
+			method: 'POST',
+			credentials: 'include'
+		}).then(r => {
+			if (r.ok) {
+				update(props.id, false)
+				setRenameValue("")
+				setRenameMsg({ text: "Feed renamed successfully", type: "success" })
+				setTimeout(() => setRenameMsg({ text: "", type: "" }), 3000)
+			} else {
+				setRenameMsg({ text: "Failed to rename feed", type: "error" })
+				setTimeout(() => setRenameMsg({ text: "", type: "" }), 3000)
+			}
+		}).catch(() => {
+			setRenameMsg({ text: "Network error", type: "error" })
+			setTimeout(() => setRenameMsg({ text: "", type: "" }), 3000)
+		})
+	}, [props.id, renameValue, update])
+
 	let isrr = useCallback(() => {
 		if (!data.URL) {
 			return null
@@ -183,6 +239,11 @@ export const FeedDetails = (props) => {
 							}
 							<${DeleteButton} onclick=${deleteFeed} class=${deleteConfirm ? "confirm" : ""}>Delete Feed</${DeleteButton}>
 						<//>
+						<${RenameForm} onsubmit=${renameFeed}>
+							<${RenameInput} type="text" placeholder="New feed name" value=${renameValue} oninput=${(e) => setRenameValue(e.target.value)} />
+							<${ActionButton} type="submit">Rename Feed</${ActionButton}>
+						<//>
+						<${RenameStatus} class=${renameMsg.type === "error" ? "error" : ""}>${renameMsg.text != "" ? renameMsg.text : ""}${"\u200b"}<//>
 					`
 				} else if (dataOk !== null) {
 					return html`<${Fallback}>Error loading data: ${dataOk}<//>`
