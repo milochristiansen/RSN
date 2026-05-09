@@ -74,12 +74,40 @@ let RenameForm = Style.form`
 	margin-right: auto;
 
 	margin-top: 20px;
+
+	@media (max-width: 450px) {
+		flex-direction: column;
+		width: 100%;
+		margin-left: 0;
+		margin-right: 0;
+	}
 `
 
 let RenameInput = Style.input`
 	padding: 5px;
 	margin-right: 10px;
 	flex: 1;
+
+	@media (max-width: 450px) {
+		margin-right: 0;
+		width: 100%;
+		margin-bottom: 10px;
+	}
+`
+
+let RenameButton = Style.button`
+	padding: 5px;
+	padding-left: 30px;
+	padding-right: 30px;
+
+	margin-left: 10px;
+	margin-right: 10px;
+
+	@media (max-width: 450px) {
+		width: 100%;
+		margin-left: 0;
+		margin-right: 0;
+	}
 `
 
 let RenameStatus = Style.span`
@@ -241,7 +269,7 @@ export const FeedDetails = (props) => {
 						<//>
 						<${RenameForm} onsubmit=${renameFeed}>
 							<${RenameInput} type="text" placeholder="New feed name" value=${renameValue} oninput=${(e) => setRenameValue(e.target.value)} />
-							<${ActionButton} type="submit">Rename Feed</${ActionButton}>
+							<${RenameButton} type="submit">Rename Feed<//>
 						<//>
 						<${RenameStatus} class=${renameMsg.type === "error" ? "error" : ""}>${renameMsg.text != "" ? renameMsg.text : ""}${"\u200b"}<//>
 					`
