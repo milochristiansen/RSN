@@ -2,6 +2,33 @@ import { useState, useCallback } from "preact/hooks"
 import { html } from "/header.js"
 import { Style } from "/components/Style.js"
 
+const StatusMessage = Style.span`
+	&.error {
+		color: var(--warning-color);
+	}
+`
+
+const Status = Style.div`
+
+`
+
+const AddBody = Style.section`
+	margin-top: 5px;
+	margin-bottom: 10px;
+
+	margin-left: 10px;
+	margin-right: 10px;
+`
+
+const AddForm = Style.form`
+	display: flex;
+	flex-direction: column;
+
+	input {
+		margin-top: 2px;
+	}
+`
+
 export const AddFeed = (props) => {
 	let [addState, setAddState] = useState(null)
 	let [url, setUrl] = useState("")
@@ -49,35 +76,18 @@ export const AddFeed = (props) => {
 		}
 	}, [])
 
-	let status = html`<span> </span>`
+	let status = html`<${StatusMessage}>${"\u200b"}<//>`
 	if (addState === false) {
-		status = html`<span class="error">Failed adding feed.</span>`
+		status = html`<${StatusMessage} class="error">Failed adding feed.<//>`
 	} else if (addState === true) {
-		status = html`<span>Feed added!</span>`
+		status = html`<${StatusMessage}>Feed added!<//>`
 	}
-
-	const AddBody = Style.section`
-		margin-top: 5px;
-		margin-bottom: 10px;
-
-		margin-left: 10px;
-		margin-right: 10px;
-	`
-
-	const AddForm = Style.form`
-		display: flex;
-		flex-direction: column;
-
-		input {
-			margin-top: 2px;
-		}
-	`
 
 	return html`
 		<${AddBody}>
-			<div class="status">
+			<${Status}>
 				${status}
-			</div>
+			<//>
 			<${AddForm} onsubmit=${addfeed}>
 				<input type="text" placeholder="Feed URL" name="url" value=${url} onInput=${handleInput} />
 				<input type="text" placeholder="Feed Name" name="name" value=${name} onInput=${handleInput} />
