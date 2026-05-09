@@ -30,7 +30,8 @@
 	</head>
 	<body>
 		<script type="module">
-		import { html, render, createRef } from "/header.js"
+		import { html, render } from "/header.js"
+		import { createRef } from "preact"
 		import css from "csz"
 
 		const evtSource = new EventSource("https://httpscolonslashslashwww.com/twitch/sse");

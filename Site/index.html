@@ -52,6 +52,7 @@
 		<script type="module">
 		import { html, render } from "/header.js"
 		import css from "csz"
+		import { Style } from "/components/Style.js"
 
 		import { Router } from "preact-router"
 		import { lazy, Suspense } from "preact/compat"
@@ -152,51 +153,52 @@
 			}
 		`
 
-		const header = css`
+		const SiteHeader = Style.header`
 			text-align: left;
 			margin-bottom: 10px;
+		`
 
-			.header-headline {
-				display: flex;
-				flex-direction: row;
+		const HeaderHeadline = Style.div`
+			display: flex;
+			flex-direction: row;
+		`
 
-				img {
-					background-color: var(--color-fg);
-					border-radius: 50%;
+		const HeaderLogo = Style.img`
+			background-color: var(--color-fg);
+			border-radius: 50%;
 
-					max-width: 50px;
+			max-width: 50px;
 
-					margin: 10px;
-				}
+			margin: 10px;
+		`
 
-				h1 {
-					margin: 0;
-					margin-top: auto;
-					margin-bottom: auto;
-					text-align: center;
-					& > a {
-						color: var(--heading-color);
-						text-decoration: none;
-					}
-				}
-			}
+		const HeaderTitle = Style.h1`
+			margin: 0;
+			margin-top: auto;
+			margin-bottom: auto;
+			text-align: center;
+		`
 
-			.header-links {
-				color: var(--bg-color);
-				background-color: var(--heading-color);
+		const HeaderTitleLink = Style.a`
+			color: var(--heading-color);
+			text-decoration: none;
+		`
 
-				display: flex;
-				flex-direction: row;
-				justify-content: flex-end;
+		const HeaderLinks = Style.div`
+			color: var(--bg-color);
+			background-color: var(--heading-color);
 
-				a {
-					color: var(--bg-color);
-					text-decoration: none;
+			display: flex;
+			flex-direction: row;
+			justify-content: flex-end;
+		`
 
-					padding-right: 10px;
-					padding-left: 10px;
-				}
-			}
+		const HeaderNavLink = Style.a`
+			color: var(--bg-color);
+			text-decoration: none;
+
+			padding-right: 10px;
+			padding-left: 10px;
 		`
 
 		const body = css`
@@ -209,7 +211,7 @@
 			width: 100%;
 		`
 
-		const footer = css`
+		const SiteFooter = Style.footer`
 			color: var(--bg-color);
 			background-color: var(--color-fg);
 
@@ -218,21 +220,22 @@
 
 			text-align: left;
 			font-size: 0.5em;
+		`
 
-			p {
-				display: inline-block;
-				margin: 0;
-				margin-right: 5px;
-				margin-left: 5px;
-			}
+		const FooterParagraph = Style.p`
+			display: inline-block;
+			margin: 0;
+			margin-right: 5px;
+			margin-left: 5px;
+		`
 
-			a {
-				color: var(--color-fg);
-				height: 1em;
-			}
-			.theme-swap {
-				float: right;
-			}
+		const FooterLink = Style.a`
+			color: var(--color-fg);
+			height: 1em;
+		`
+
+		const ThemeSwap = Style.p`
+			float: right;
 		`
 
 		// Needed for a hack later.
@@ -251,27 +254,27 @@
 
 		render(html`
 			<${AuthProvider}><${ThemeProvider}>
-				<header class=${header}>
-					<div class="header-headline">
-						<img src="/assets/round.svg" alt="" width="50" height="50" />
-						<h1><a href="/">Really Simple Notifier</a></h1>
-					</div>
-					<div class="header-links">
+				<${SiteHeader}>
+					<${HeaderHeadline}>
+						<${HeaderLogo} src="/assets/round.svg" alt="" width="50" height="50" />
+						<${HeaderTitle}><${HeaderTitleLink} href="/">Really Simple Notifier<//><//>
+					<//>
+					<${HeaderLinks}>
 						<${AuthConsumer}>
 							${auth => {
 								if (auth.ok) {
 									return html`
-										<a href="/read/unread">Unread</a>
-										<a href="/read/recentread">Recently Read</a>
-										<a href="/read/feeds">Feeds</a>
+										<${HeaderNavLink} href="/read/unread">Unread<//>
+										<${HeaderNavLink} href="/read/recentread">Recently Read<//>
+										<${HeaderNavLink} href="/read/feeds">Feeds<//>
 									`
 								}
 								return null
 							}}
 						<//>
-						<${LoginLogoutLink} />
-					</div>
-				</header>
+						<${LoginLogoutLink} as=${HeaderNavLink} />
+					<//>
+				<//>
 				<article class=${body}>
 					<${AuthConsumer}>${auth => html`
 						<${Router} onChange=${evnt => auth.refresh(evnt)}>
@@ -312,41 +315,40 @@
 						<//>
 					`}<//>
 				</article>
-				<footer class=${footer}>
+				<${SiteFooter}>
 					<!-- This is the most idiotic hack I have seen in a long time. The Match component doesn't seem fit
 					for purpose, it does not update when the route changes. However, we can just... Add a whole-ass
 					second router. It works. I guess. -->
 					<${Router}>
 						<${AddFeed} path="/read/unread"/>
 					<//>
-					<p>
+					<${FooterParagraph}>
 						This site runs off a pathetic little system with very limited computing resources, be nice to
 						it, it's trying as hard as it can.
-					</p>
-					<p>
+					<//>
+					<${FooterParagraph}>
 						<span>To report issues, get help, etc. send a message to: </span>
 						<span dangerouslySetInnerHTML=${{ __html: `<a
 							href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#109;&#105;&#108;&#111;&#64;&#104;&#116;&#116;&#112;&#115;&#99;&#111;&#108;&#111;&#110;&#115;&#108;&#97;&#115;&#104;&#115;&#108;&#97;&#115;&#104;&#119;&#119;&#119;&#46;&#99;&#111;&#109;"
 						>
 							&#109;&#105;&#108;&#111;&#64;&#104;&#116;&#116;&#112;&#115;&#99;&#111;&#108;&#111;&#110;&#115;&#108;&#97;&#115;&#104;&#115;&#108;&#97;&#115;&#104;&#119;&#119;&#119;&#46;&#99;&#111;&#109;
 						</a>`}}></span>
-					</p>
-					<p class="theme-swap">
+					<//>
+					<${ThemeSwap}>
 						<${ThemeConsumer}>
 							${data => {
 								return html`
-									<a
+									<${FooterLink}
 										href="${data.theme == "dark" ? "#light-theme" : "#dark-theme"}"
-										class="theme-swap"
 										onclick=${evnt => data.toggle(evnt)}
 									>
 										${data.theme == "dark" ? "☀" : "☼"}
-									</a>
+									<//>
 								`
 							}}
 						<//>
-					</p>
-				</footer>
+					<//>
+				<//>
 			<//><//>
 		`, document.body)
 		</script>

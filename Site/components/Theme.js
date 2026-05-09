@@ -1,5 +1,6 @@
 import { useState, useCallback } from "preact/hooks"
-import { html, createContext } from "/header.js"
+import { html } from "/header.js"
+import { createContext } from "preact"
 
 export const ThemeContext = createContext({refresh: () => {}, theme: "dark"})
 

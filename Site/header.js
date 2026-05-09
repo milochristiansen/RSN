@@ -5,7 +5,7 @@
 import htm from "htm"
 
 // Import PReact
-import { h, render, createRef, createContext } from "preact"
+import { h, render } from "preact"
 
 // Bind PReact to the HTML processor
 const html = htm.bind(h)
@@ -18,4 +18,4 @@ import { Title } from "/components/Title.js"
 import { Style } from "/components/Style.js"
 
 // Export all that stuff so the components can use it.
-export { html, h, render, createRef, createContext, Meta, Title, Style }
+export { html, h, render, Meta, Title, Style }
