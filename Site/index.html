@@ -61,6 +61,7 @@
 		import { AddFeed } from "/components/AddFeed.js"
 
 		import { Main } from '/pages/Main.js'
+		import { EmailLink } from '/components/EmailLink.js'
 
 		// Handle max width properly.
 		window.addEventListener("resize", () => {
@@ -195,7 +196,7 @@
 			padding-left: 10px;
 		`
 
-		const body = css`
+		const Body = Style.article`
 			color: var(--color-fg);
 			background-color: var(--bg-color);
 
@@ -262,7 +263,7 @@
 						<${LoginLogoutLink} as=${HeaderNavLink} />
 					<//>
 				<//>
-				<article class=${body}>
+				<${Body}>
 					<${AuthConsumer}>${auth => html`
 						<${Router} onRouteChange=${evnt => auth.refresh(evnt)}>
 							<${Main} path="/" />
@@ -280,7 +281,7 @@
 							<${Page404} default />
 						<//>
 					`}<//>
-				</article>
+				<//>
 				<${SiteFooter}>
 					<${() => {
 						const { path } = useLocation()
@@ -292,11 +293,7 @@
 					<//>
 					<${FooterParagraph}>
 						<span>To report issues, get help, etc. send a message to: </span>
-						<span dangerouslySetInnerHTML=${{ __html: `<a
-							href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#109;&#105;&#108;&#111;&#64;&#104;&#116;&#116;&#112;&#115;&#99;&#111;&#108;&#111;&#110;&#115;&#108;&#97;&#115;&#104;&#115;&#108;&#97;&#115;&#104;&#119;&#119;&#119;&#46;&#99;&#111;&#109;"
-						>
-							&#109;&#105;&#108;&#111;&#64;&#104;&#116;&#116;&#112;&#115;&#99;&#111;&#108;&#111;&#110;&#115;&#108;&#97;&#115;&#104;&#115;&#108;&#97;&#115;&#104;&#119;&#119;&#119;&#46;&#99;&#111;&#109;
-						</a>`}}></span>
+						<${EmailLink} />
 					<//>
 					<${ThemeSwap}>
 						<${ThemeConsumer}>

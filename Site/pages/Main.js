@@ -1,4 +1,5 @@
 import { html, Meta, Title } from "/header.js"
+import { EmailLink } from "/components/EmailLink.js"
 
 export const Main = (props) => {
 	return html`
@@ -39,14 +40,10 @@ export const Main = (props) => {
 		<p>
 			This project was made for my personal use. I use it every day for all my reading needs, so it
 			${' '}<i>should</i> be pretty reliable. That said, sometimes stuff breaks. If it does use
-			<span dangerouslySetInnerHTML=${{ __html: ` <a
-				href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#109;&#105;&#108;&#111;&#64;&#104;&#116;&#116;&#112;&#115;&#99;&#111;&#108;&#111;&#110;&#115;&#108;&#97;&#115;&#104;&#115;&#108;&#97;&#115;&#104;&#119;&#119;&#119;&#46;&#99;&#111;&#109;"
-			>
-				this handy little email link
-			</a> `}}></span>
-			to let me know what is wrong. I'll have it working again shortly. This isn't the product of some big
-			corporation, its all one dude who likes webfiction and comics and couldn't find a good way to handle RSS
-			feeds across devices that didn't have a subscription fee and/or missing required features. Usually both.
+			<${EmailLink}>this handy little email link<//> to let me know what is wrong. I'll have it working again
+			shortly. This isn't the product of some big corporation, its all one dude who likes webfiction and comics
+			and couldn't find a good way to handle RSS feeds across devices that didn't have a subscription fee and/or
+			missing required features. Usually both.
 		</p>
 		<p>
 			Anyway, if you want to give my little project a try you can
