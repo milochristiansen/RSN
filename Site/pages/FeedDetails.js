@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "preact/hooks"
 import { html, Meta, Title, Style } from "/header.js"
-import { route } from 'preact-router';
+import { useLocation } from 'preact-iso';
 import { SingleArticleRow } from "/components/SingleArticleRow.js"
 import { Fallback } from "/components/Fallback.js"
 import { useAuthRedirect } from "/components/AuthRedirectHook.js"
@@ -66,6 +66,7 @@ let FeedDetailsSection = Style.section`
 
 export const FeedDetails = (props) => {
 	useAuthRedirect("/")
+	let { route } = useLocation()
 
 	let [data, setData] = useState({})
 	let [articles, setArticles] = useState([])
