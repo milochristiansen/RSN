@@ -15,11 +15,11 @@ const Style = new Proxy(
 			let {as, children, ["class"]:no, ...remaining} = combined
 
 			// Handle the special "as" prop.
-			if (typeof combined.as == "string") {
+			if (combined.as != null) {
 				typ = combined.as
 			}
 
-			return h(typ, {class: [genclass, combined.class].join(" "), ...remaining}, ...combined.children)
+			return h(typ, {class: [genclass, combined.class].join(" "), ...remaining}, combined.children)
 		}
 
 		// This parses the CSS and then binds it into the render function along with the default props.
@@ -72,4 +72,5 @@ let Link = Style.a.props({href:"https://example.com"})`
 <${Test} as="div">Some red text.<//>
 */
 
+export { Style }
 export default Style
