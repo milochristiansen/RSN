@@ -45,8 +45,9 @@ func main() {
 	defer db.Close()
 
 	l.I.Println("Creating message handler.")
+	onMsgLogger := sessionlogger.NewSessionLogger("on-msg")
 	client.OnMessage = func(i *IRCMsg) {
-		fmt.Println(i.Raw)
+		onMsgLogger.I.Println(i.Raw)
 
 		if i.Command == "PRIVMSG" {
 			switch i.Params[len(i.Params)-1] {
