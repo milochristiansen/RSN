@@ -2,6 +2,7 @@
 # Binaries
 *.bin
 App/server
+Bot/twitchbot
 
 # Sublime stuff
 *.sublime-workspace
