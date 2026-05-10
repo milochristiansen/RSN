@@ -133,7 +133,7 @@ type IRCMsg struct {
 }
 
 func parseMsg(line string) *IRCMsg {
-	parts := strings.Split(line, " ")
+	parts := strings.Fields(line)
 	index := 0
 
 	// Just drop the tags if any exist, I don't care.
