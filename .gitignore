@@ -1,6 +1,7 @@
 
 # Binaries
 *.bin
+App/server
 
 # Sublime stuff
 *.sublime-workspace
@@ -18,4 +19,3 @@ token-*.json
 # Test server files
 Site/api/
 Site/auth/
-

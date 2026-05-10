@@ -22,7 +22,7 @@ misrepresented as being the original software.
 
 package main
 
-import _ "github.com/mattn/go-sqlite3"
+import _ "modernc.org/sqlite"
 import "database/sql"
 
 var DB *sql.DB

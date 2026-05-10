@@ -23,10 +23,12 @@ misrepresented as being the original software.
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -213,16 +215,19 @@ func DeleteSessionData(l *sessionlogger.Logger, w http.ResponseWriter, r *http.R
 
 	// Revoke token
 	// I could not find a generic revocation API in either the oauth or oidc libraries, so do it the caveman way.
+	vals := url.Values{
+		"token": []string{token.AccessToken},
+	}
 	_, err = http.DefaultClient.Do(&http.Request{
-		Method: "GET",
+		Method: "POST",
 		Header: map[string][]string{
-			"Content-type": {"application/x-www-form-urlencoded"},
+			"Content-Type": {"application/x-www-form-urlencoded"},
 		},
+		Body: io.NopCloser(bytes.NewBufferString(vals.Encode())),
 		URL: &url.URL{
-			Scheme:   "https",
-			Host:     "oauth2.googleapis.com",
-			Path:     "/revoke",
-			RawQuery: "token=" + token.AccessToken,
+			Scheme: "https",
+			Host:   "oauth2.googleapis.com",
+			Path:   "/revoke",
 		},
 	})
 	if err != nil {
