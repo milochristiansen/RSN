@@ -8,6 +8,7 @@ import (
 	"net/textproto"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -22,6 +23,9 @@ type IRC struct {
 
 	messages chan sendPair
 	initMsgs sync.Once
+	conn     net.Conn
+	done     chan struct{}
+	shutdown atomic.Uint32
 }
 
 const (
@@ -34,20 +38,26 @@ func (irc *IRC) Connect(id, token, channel string) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+
+	// Reset the shutdown infrastructure.
+	irc.shutdown.Store(0)
+	irc.done = make(chan struct{})
+	irc.conn = conn
+
+	// And setup cleanup.
+	defer irc.Shutdown()
 
 	buffconn := bufio.NewReader(conn)
 	proto := textproto.NewReader(buffconn)
 
 	// Start write loop handler
-	done := make(chan bool)
 	go func() {
 		irc.initMessages()
 
 		buf := new(bytes.Buffer)
 		for {
 			select {
-			case <-done:
+			case <-irc.done:
 				return
 			case pair := <-irc.messages:
 				buf.Reset()
@@ -75,7 +85,6 @@ func (irc *IRC) Connect(id, token, channel string) error {
 	for {
 		line, err := proto.ReadLine()
 		if err != nil {
-			close(done)
 			return err
 		}
 
@@ -88,7 +97,6 @@ func (irc *IRC) Connect(id, token, channel string) error {
 		case "PING":
 			err := irc.Send(&IRCMsg{Command: "PONG", Params: msg.Params})
 			if err != nil {
-				close(done)
 				return err
 			}
 		case "PRIVMSG":
@@ -107,7 +115,7 @@ type sendPair struct {
 	Conf chan error
 }
 
-// Send
+// Send queues an IRCMsg and waits for it to be sent. Any error when sending is returned.
 func (irc *IRC) Send(msg *IRCMsg) error {
 	irc.initMessages()
 
@@ -116,6 +124,7 @@ func (irc *IRC) Send(msg *IRCMsg) error {
 	return <-v.Conf
 }
 
+// Say is a simple version of Send that handles the common PRIVMSG case.
 func (irc *IRC) Say(channel, msg string) error {
 	return irc.Send(&IRCMsg{Command: "PRIVMSG", Params: []string{channel, msg}})
 }
@@ -124,6 +133,20 @@ func (irc *IRC) initMessages() {
 	irc.initMsgs.Do(func() {
 		irc.messages = make(chan sendPair)
 	})
+}
+
+func (irc *IRC) Shutdown() {
+	// Atomically transition from 0 (not shutdown) to 1 (shutdown).
+	// If the value was already 1, another goroutine already shut down, so return.
+	if !irc.shutdown.CompareAndSwap(0, 1) {
+		return
+	}
+	if irc.done != nil {
+		close(irc.done)
+	}
+	if irc.conn != nil {
+		irc.conn.Close()
+	}
 }
 
 type IRCMsg struct {

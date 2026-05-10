@@ -7,7 +7,9 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"fmt"
@@ -37,14 +39,14 @@ func main() {
 
 	l.I.Println("Bot starting...")
 	
-	client := new(IRC)
-
 	db, err := buntdb.Open(":memory:")
 	if err != nil {
 		l.E.Println(err)
 		os.Exit(1)
 	}
 	defer db.Close()
+
+	client := new(IRC)
 
 	l.I.Println("Creating message handler.")
 	onMsgLogger := sessionlogger.NewSessionLogger("on-msg")
@@ -63,19 +65,34 @@ func main() {
 		}
 	}
 
+	done := make(chan struct{})
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sig
+		l.I.Println("Shutting down...")
+		close(done)
+	}()
+
 	l.I.Println("Starting timer loop.")
 	go func(){
 		l := sessionlogger.NewSessionLogger("timer-loop")
 		lastPlug := time.Now().Add(-(time.Minute * 30))
+		ticker := time.NewTicker(time.Minute)
+		defer ticker.Stop()
 		for {
-			time.Sleep(time.Minute)
-			// If the last message was within a few minutes:
-			if time.Now().Sub(client.LastMsg) < (time.Minute * 10) {
-				// If the last plug was more than an hour ago.
-				if time.Now().Sub(lastPlug) > time.Hour {
-					l.I.Println("Sending Discord plug.")
-					client.Say(Channel, "Join the Discord for memes, live notifications, game suggestions, and general craziness: https://discord.gg/ayrXgwNTJR")
-					lastPlug = time.Now()
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				// If the last message was within a few minutes:
+				if time.Now().Sub(client.LastMsg) < (time.Minute * 10) {
+					// If the last plug was more than an hour ago.
+					if time.Now().Sub(lastPlug) > time.Hour {
+						l.I.Println("Sending Discord plug.")
+						client.Say(Channel, "Join the Discord for memes, live notifications, game suggestions, and general craziness: https://discord.gg/ayrXgwNTJR")
+						lastPlug = time.Now()
+					}
 				}
 			}
 		}
@@ -88,6 +105,15 @@ func main() {
 			tkn, err := getToken("token-bot.json")
 			if err != nil {
 				l.E.Println(err)
+
+				// If we are shutting down, bail
+				select {
+				case <-done:
+					return
+				default:
+				}
+
+				// Otherwise sleep for a bit and go try again.
 				l.I.Println("Sleeping for 1m")
 				time.Sleep(time.Minute)
 				continue
@@ -96,10 +122,18 @@ func main() {
 			err = client.Connect(BotName, "oauth:"+tkn, Channel)
 			if err != nil {
 				l.E.Println(err)
-				l.I.Println("Sleeping for 1m")
-				time.Sleep(time.Minute)
-				continue
 			}
+
+			// If we are shutting down, bail
+			select {
+			case <-done:
+				return
+			default:
+			}
+
+			// Otherwise sleep for a bit and go try again.
+			l.I.Println("Sleeping for 1m")
+			time.Sleep(time.Minute)
 		}
 	}()
 
@@ -300,9 +334,19 @@ func main() {
 	http.HandleFunc("/twitch/sse", SSEHandler)
 
 	l.I.Println("Starting HTTP server.")
-	err = http.ListenAndServe(":80", nil)
-	if err != nil {
-		l.E.Println(err)
+	srv := &http.Server{Addr: ":80"}
+	go func() {
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			l.E.Println(err)
+		}
+	}()
+
+	client.Shutdown()
+	l.I.Println("Shutting down HTTP server...")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		l.E.Println("HTTP server shutdown error:", err)
 	}
 }
 
