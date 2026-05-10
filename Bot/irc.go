@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/textproto"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type IRC struct {
 	OnMessage func(*IRCMsg) // Called for all incoming messages except PING
 
 	messages chan sendPair
+	initMsgs sync.Once
 }
 
 const (
@@ -40,9 +42,7 @@ func (irc *IRC) Connect(id, token, channel string) error {
 	// Start write loop handler
 	done := make(chan bool)
 	go func() {
-		if irc.messages == nil {
-			irc.messages = make(chan sendPair)
-		}
+		irc.initMessages()
 
 		buf := new(bytes.Buffer)
 		for {
@@ -109,9 +109,7 @@ type sendPair struct {
 
 // Send
 func (irc *IRC) Send(msg *IRCMsg) error {
-	if irc.messages == nil {
-		irc.messages = make(chan sendPair)
-	}
+	irc.initMessages()
 
 	v := sendPair{msg, make(chan error, 1)}
 	irc.messages <- v
@@ -120,6 +118,12 @@ func (irc *IRC) Send(msg *IRCMsg) error {
 
 func (irc *IRC) Say(channel, msg string) error {
 	return irc.Send(&IRCMsg{Command: "PRIVMSG", Params: []string{channel, msg}})
+}
+
+func (irc *IRC) initMessages() {
+	irc.initMsgs.Do(func() {
+		irc.messages = make(chan sendPair)
+	})
 }
 
 type IRCMsg struct {
