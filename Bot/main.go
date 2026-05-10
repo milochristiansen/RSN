@@ -30,6 +30,8 @@ const (
 	BotName = "mechanicalmilo"
 )
 
+var ErrDuplicateMessage = errors.New("Duplicate Message Suppressed")
+
 func main() {
 	l := sessionlogger.NewMasterLogger()
 
@@ -162,8 +164,6 @@ func main() {
 		}
 	}
 
-	errExists := errors.New("Duplicate Message Suppressed")
-
 	// Handle event webhooks.
 	l.I.Println("Creating webhook handlers.")
 	handler := esf.NewSubHandler(true, []byte(EventSubSecret))
@@ -173,7 +173,7 @@ func main() {
 		if db.Update(func(tx *buntdb.Tx) error {
 			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
 			if replaced {
-				return errExists
+				return ErrDuplicateMessage
 			}
 			return nil
 		}) != nil {
@@ -194,7 +194,7 @@ func main() {
 		if db.Update(func(tx *buntdb.Tx) error {
 			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
 			if replaced {
-				return errExists
+				return ErrDuplicateMessage
 			}
 			return nil
 		}) != nil {
@@ -211,7 +211,7 @@ func main() {
 		if db.Update(func(tx *buntdb.Tx) error {
 			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
 			if replaced {
-				return errExists
+				return ErrDuplicateMessage
 			}
 			return nil
 		}) != nil {
@@ -228,7 +228,7 @@ func main() {
 		if db.Update(func(tx *buntdb.Tx) error {
 			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
 			if replaced {
-				return errExists
+				return ErrDuplicateMessage
 			}
 			return nil
 		}) != nil {
@@ -245,7 +245,7 @@ func main() {
 		if db.Update(func(tx *buntdb.Tx) error {
 			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
 			if replaced {
-				return errExists
+				return ErrDuplicateMessage
 			}
 			return nil
 		}) != nil {
@@ -263,7 +263,7 @@ func main() {
 		if db.Update(func(tx *buntdb.Tx) error {
 			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
 			if replaced {
-				return errExists
+				return ErrDuplicateMessage
 			}
 			return nil
 		}) != nil {
@@ -280,7 +280,7 @@ func main() {
 		if db.Update(func(tx *buntdb.Tx) error {
 			_, replaced, _ := tx.Set(h.MessageID, "true", &buntdb.SetOptions{Expires: true, TTL: time.Minute * 5})
 			if replaced {
-				return errExists
+				return ErrDuplicateMessage
 			}
 			return nil
 		}) != nil {
@@ -315,7 +315,7 @@ var Broker = struct {
 	ClosingClients chan chan []byte // Closed client connections
 	clients map[chan []byte]bool // Client connections registry
 }{
-	Messages:       make(chan []byte, 1),
+	Messages:       make(chan []byte, 10), // May need to grow if traffic increases
 	NewClients:     make(chan chan []byte),
 	ClosingClients: make(chan chan []byte),
 	clients:        make(map[chan []byte]bool),
@@ -387,7 +387,11 @@ func SSEHandler(w http.ResponseWriter, r *http.Request) {
 		case <-r.Context().Done():
 			break
 		case ev := <-messages:
-			fmt.Fprintf(w, "%s\n\n", ev)
+			_, err := fmt.Fprintf(w, "%s\n\n", ev)
+			if err != nil {
+				l.E.Println("SSE write error:", err)
+				return
+			}
 			f.Flush()
 		}
 	}
@@ -397,9 +401,9 @@ func SSEHandler(w http.ResponseWriter, r *http.Request) {
 // =====================================================================================================================
 
 var AuthData = &struct{
+	sync.Mutex
 	Config   oauth2.Config
 	Context  context.Context
-	Lock sync.Mutex
 }{
 	Context: context.Background(),
 	Config: oauth2.Config{
@@ -424,8 +428,8 @@ var AppToken = (&clientcredentials.Config{
 // Bot token, take 2: App token, no special perms
 
 func getToken(path string) (string, error) {
-	AuthData.Lock.Lock()
-	defer AuthData.Lock.Unlock()
+	AuthData.Lock()
+	defer AuthData.Unlock()
 
 	tokenR, err := os.ReadFile(path)
 	if err != nil {
@@ -452,7 +456,7 @@ func getToken(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	os.WriteFile(path, tokenB, 0666)
+	os.WriteFile(path, tokenB, 0600)
 	return token.AccessToken, nil
 }
 
