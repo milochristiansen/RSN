@@ -1,4 +1,4 @@
-import { useState, useCallback } from "preact/hooks"
+import { useState, useCallback, useEffect } from "preact/hooks"
 import { html } from "/header.js"
 import { createContext } from "preact"
 
@@ -39,6 +39,10 @@ export function AuthProvider(props) {
 				localStorage.setItem('whoami', JSON.stringify(whoami))
 			})
 	}
+
+	useEffect(() => {
+		refresh()
+	}, [])
 
 	return html`
 		<${AuthContext.Provider} value=${auth}>

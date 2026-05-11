@@ -8,9 +8,9 @@ const LoginLogoutLink = (props) => {
 	let Link = props.as ?? Style.a
 
 	if (auth.ok) {
-		return html`<${Link} href="/auth/logout" native>Logout<//>`
+		return html`<${Link} href="/auth/logout" target="_top">Logout<//>`
 	}
-	return html`<${Link} href="/auth/login/google" native>Login<//>`
+	return html`<${Link} href="/auth/login/google" target="_top">Login<//>`
 }
 
 export { LoginLogoutLink }

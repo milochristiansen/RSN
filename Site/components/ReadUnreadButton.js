@@ -48,7 +48,7 @@ export const ReadUnreadButton = (props) => {
 			if (state) {
 				if (props.state) {
 					if (props.aid != undefined) {
-						fetch("/api/article/unread?id=" + props.aid).then(r => {
+						fetch("/api/articles/" + props.aid, { method: 'PATCH', credentials: 'include', body: JSON.stringify({ read: false }) }).then(r => {
 							if (r.ok) {
 								root.current.dispatchEvent(OnUnread)
 							}
@@ -56,7 +56,7 @@ export const ReadUnreadButton = (props) => {
 					}
 				} else {
 					if (props.aid != undefined) {
-						fetch("/api/article/read?id=" + props.aid).then(r => {
+						fetch("/api/articles/" + props.aid, { method: 'PATCH', credentials: 'include', body: JSON.stringify({ read: true }) }).then(r => {
 							if (r.ok) {
 								root.current.dispatchEvent(OnRead)
 							}

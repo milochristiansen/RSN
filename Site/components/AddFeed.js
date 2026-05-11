@@ -43,7 +43,7 @@ export const AddFeed = (props) => {
 			return;
 		}
 
-		fetch("/api/feed/subscribe", {
+		fetch("/api/feeds", {
 			method: "POST",
 			credentials: "include",
 			body: JSON.stringify({

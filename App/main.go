@@ -25,319 +25,261 @@ package main
 
 import (
 	"encoding/json"
-	"net/http"
-	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/gofiber/fiber/v3"
 
 	"github.com/milochristiansen/sessionlogger"
 )
 
 const MaxBodyBytes = int64(65536)
 
-func main() {
-	// /api/feed/list
-	http.HandleFunc("/api/feed/list", func(w http.ResponseWriter, r *http.Request) {
-		l := sessionlogger.NewSessionLogger("/api/feed/list")
+// LoggerMiddleware creates a session logger and stores it on the context.
+func LoggerMiddleware() fiber.Handler {
+	return func(c fiber.Ctx) error {
+		l := sessionlogger.NewSessionLogger(c.Path())
+		c.Locals(loggerKey{}, l)
+		return c.Next()
+	}
+}
 
-		user, status := GetSessionData(l, w, r)
-		if status != http.StatusOK {
-			w.WriteHeader(status)
-			return
+func main() {
+	app := fiber.New()
+
+	// Auth routes (logger only, no auth middleware)
+	authGroup := app.Group("/auth", LoggerMiddleware())
+	authGroup.Get("/login/google", GoogleLoginEndpoint)
+	authGroup.Get("/redirect/google", GoogleRedirectEndpoint)
+	authGroup.Get("/logout", LogoutEndpoint)
+
+	// Special fake login URL for testing. In testing mode any user that hits a login url is redirected here.
+	if isTestMode() {
+		authGroup.Get("/login/mock", MockLoginEndpoint)
+	}
+
+	// /auth/whoami is special, as it is an authenticated route in an otherwise unauthenticated group.
+	authGroup.Get("/whoami", AuthMiddleware(), func(c fiber.Ctx) error {
+		user := c.Locals(userKey{}).(*WhoAmIData)
+
+		jd, err := json.MarshalIndent(user, "", "    ")
+		if err != nil {
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
+		return c.Send(jd)
+	})
+
+	// Protected API routes (logger + auth)
+	apiGroup := app.Group("/api", LoggerMiddleware(), AuthMiddleware())
+
+	// GET /api/feeds - list all feeds
+	apiGroup.Get("/feeds", func(c fiber.Ctx) error {
+		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
+		user := c.Locals(userKey{}).(*WhoAmIData)
 
 		feeds := FeedList(l, user.UID)
 		if feeds == nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		err := json.NewEncoder(w).Encode(feeds)
-		if err != nil {
-			l.E.Printf("Error encoding payload. Error: %v\n", err)
-			return
-		}
+		return c.JSON(feeds)
 	})
 
-	// /api/feed/details
-	http.HandleFunc("/api/feed/details", func(w http.ResponseWriter, r *http.Request) {
-		l := sessionlogger.NewSessionLogger("/api/feed/details")
+	// GET /api/feeds/:id - get feed details
+	apiGroup.Get("/feeds/:id", func(c fiber.Ctx) error {
+		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
+		user := c.Locals(userKey{}).(*WhoAmIData)
 
-		user, status := GetSessionData(l, w, r)
-		if status != http.StatusOK {
-			w.WriteHeader(status)
-			return
-		}
-
-		feed := r.FormValue("id")
-		if feed == "" {
+		id := c.Params("id")
+		if id == "" {
 			l.W.Printf("Missing feed ID.\n")
-			w.WriteHeader(http.StatusBadRequest)
-			return
+			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
-		details := FeedDetails(l, user.UID, feed)
+		details := FeedDetails(l, user.UID, id)
 		if details == nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		err := json.NewEncoder(w).Encode(details)
-		if err != nil {
-			l.E.Printf("Error encoding payload. Error: %v\n", err)
-			return
-		}
+		return c.JSON(details)
 	})
 
-	// /api/feed/articles
-	http.HandleFunc("/api/feed/articles", func(w http.ResponseWriter, r *http.Request) {
-		l := sessionlogger.NewSessionLogger("/api/feed/articles")
+	// GET /api/feeds/:id/articles - get articles for a feed
+	apiGroup.Get("/feeds/:id/articles", func(c fiber.Ctx) error {
+		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
+		user := c.Locals(userKey{}).(*WhoAmIData)
 
-		user, status := GetSessionData(l, w, r)
-		if status != http.StatusOK {
-			w.WriteHeader(status)
-			return
-		}
-
-		feed := r.FormValue("id")
-		if feed == "" {
+		id := c.Params("id")
+		if id == "" {
 			l.W.Printf("Missing feed ID.\n")
-			w.WriteHeader(http.StatusBadRequest)
-			return
+			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
-		articles := FeedArticles(l, user.UID, feed)
+		articles := FeedArticles(l, user.UID, id)
 		if articles == nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		err := json.NewEncoder(w).Encode(articles)
-		if err != nil {
-			l.W.Printf("Error encoding payload. Error: %v\n", err)
-			return
-		}
+		return c.JSON(articles)
 	})
 
-	// /api/feed/subscribe
-	http.HandleFunc("/api/feed/subscribe", func(w http.ResponseWriter, r *http.Request) {
-		l := sessionlogger.NewSessionLogger("/api/feed/subscribe")
+	// POST /api/feeds - subscribe to a feed
+	apiGroup.Post("/feeds", func(c fiber.Ctx) error {
+		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
+		user := c.Locals(userKey{}).(*WhoAmIData)
 
-		user, status := GetSessionData(l, w, r)
-		if status != http.StatusOK {
-			w.WriteHeader(status)
-			return
+		if int64(len(c.Body())) > MaxBodyBytes {
+			return c.SendStatus(fiber.StatusBadRequest)
 		}
-
-		r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
 
 		data := &FeedSubscribeData{}
-		err := json.NewDecoder(r.Body).Decode(data)
+		err := c.Bind().Body(data)
 		if err != nil {
 			l.W.Printf("Error parsing feed subscribe body. Error: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
+			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
 		if data.Name == "" {
 			l.W.Printf("No feed name given.\n")
-			w.WriteHeader(http.StatusBadRequest)
-			return
+			return c.SendStatus(fiber.StatusBadRequest)
 		}
-		_, err = url.ParseRequestURI(data.URL)
+
+		c.Status(FeedSubscribe(l, user.UID, data.URL, data.Name))
+		return nil
+	})
+
+	// DELETE /api/feeds/:id - unsubscribe from a feed
+	apiGroup.Delete("/feeds/:id", func(c fiber.Ctx) error {
+		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
+		user := c.Locals(userKey{}).(*WhoAmIData)
+
+		id := c.Params("id")
+		if id == "" {
+			l.W.Printf("Missing feed ID.\n")
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		c.Status(FeedUnsub(l, user.UID, id))
+		return nil
+	})
+
+	// PATCH /api/feeds/:id - pause/unpause/rename a feed
+	apiGroup.Patch("/feeds/:id", func(c fiber.Ctx) error {
+		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
+		user := c.Locals(userKey{}).(*WhoAmIData)
+
+		id := c.Params("id")
+		if id == "" {
+			l.W.Printf("Missing feed ID.\n")
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		body := &FeedPatchData{}
+		err := c.Bind().Body(body)
 		if err != nil {
-			l.W.Printf("Malformed URL. Error: %v\n", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
+			l.W.Printf("Error parsing feed patch body. Error: %v\n", err)
+			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
-		w.WriteHeader(FeedSubscribe(l, user.UID, data.URL, data.Name))
+		if body.Name != "" {
+			c.Status(FeedRename(l, user.UID, id, body.Name))
+			return nil
+		}
+		if body.Paused != nil {
+			if *body.Paused {
+				c.Status(FeedPause(l, user.UID, id))
+				return nil
+			}
+			c.Status(FeedUnpause(l, user.UID, id))
+			return nil
+		}
+
+		return c.SendStatus(fiber.StatusBadRequest)
 	})
 
-	// /api/feed/unsubscribe
-	http.HandleFunc("/api/feed/unsubscribe", func(w http.ResponseWriter, r *http.Request) {
-		l := sessionlogger.NewSessionLogger("/api/feed/unsubscribe")
+	// PATCH /api/articles/:id - mark article as read/unread
+	apiGroup.Patch("/articles/:id", func(c fiber.Ctx) error {
+		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
+		user := c.Locals(userKey{}).(*WhoAmIData)
 
-		user, status := GetSessionData(l, w, r)
-		if status != http.StatusOK {
-			w.WriteHeader(status)
-			return
-		}
-
-		feed := r.FormValue("id")
-		if feed == "" {
-			l.W.Printf("Missing feed ID.\n")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		w.WriteHeader(FeedUnsub(l, user.UID, feed))
-	})
-
-	// /api/feed/pause
-	http.HandleFunc("/api/feed/pause", func(w http.ResponseWriter, r *http.Request) {
-		l := sessionlogger.NewSessionLogger("/api/feed/pause")
-
-		user, status := GetSessionData(l, w, r)
-		if status != http.StatusOK {
-			w.WriteHeader(status)
-			return
-		}
-
-		feed := r.FormValue("id")
-		if feed == "" {
-			l.W.Printf("Missing feed ID.\n")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		w.WriteHeader(FeedPause(l, user.UID, feed))
-	})
-
-	// /api/feed/unpause
-	http.HandleFunc("/api/feed/unpause", func(w http.ResponseWriter, r *http.Request) {
-		l := sessionlogger.NewSessionLogger("/api/feed/unpause")
-
-		user, status := GetSessionData(l, w, r)
-		if status != http.StatusOK {
-			w.WriteHeader(status)
-			return
-		}
-
-		feed := r.FormValue("id")
-		if feed == "" {
-			l.W.Printf("Missing feed ID.\n")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		w.WriteHeader(FeedUnpause(l, user.UID, feed))
-	})
-
-	// /api/feed/rename
-	http.HandleFunc("/api/feed/rename", func(w http.ResponseWriter, r *http.Request) {
-		l := sessionlogger.NewSessionLogger("/api/feed/rename")
-
-		user, status := GetSessionData(l, w, r)
-		if status != http.StatusOK {
-			w.WriteHeader(status)
-			return
-		}
-
-		feed := r.FormValue("id")
-		if feed == "" {
-			l.W.Printf("Missing feed ID.\n")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		name := r.FormValue("name")
-		if name == "" {
-			l.W.Printf("Missing feed name.\n")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		w.WriteHeader(FeedRename(l, user.UID, feed, name))
-	})
-
-	// /api/article/read
-	http.HandleFunc("/api/article/read", func(w http.ResponseWriter, r *http.Request) {
-		l := sessionlogger.NewSessionLogger("/api/article/read")
-
-		user, status := GetSessionData(l, w, r)
-		if status != http.StatusOK {
-			w.WriteHeader(status)
-			return
-		}
-
-		article := r.FormValue("id")
-		if article == "" {
+		id := c.Params("id")
+		if id == "" {
 			l.W.Printf("Missing article ID.\n")
-			w.WriteHeader(http.StatusBadRequest)
-			return
+			return c.SendStatus(fiber.StatusBadRequest)
 		}
 
-		w.WriteHeader(ArticleMarkRead(l, user.UID, article))
+		body := &ArticlePatchData{}
+		err := c.Bind().Body(body)
+		if err != nil {
+			l.W.Printf("Error parsing article patch body. Error: %v\n", err)
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		if body.Read != nil {
+			if *body.Read {
+				c.Status(ArticleMarkRead(l, user.UID, id))
+				return nil
+			}
+			c.Status(ArticleMarkUnread(l, user.UID, id))
+			return nil
+		}
+
+		return c.SendStatus(fiber.StatusBadRequest)
 	})
 
-	// /api/article/unread
-	http.HandleFunc("/api/article/unread", func(w http.ResponseWriter, r *http.Request) {
-		l := sessionlogger.NewSessionLogger("/api/article/unread")
-
-		user, status := GetSessionData(l, w, r)
-		if status != http.StatusOK {
-			w.WriteHeader(status)
-			return
-		}
-
-		article := r.FormValue("id")
-		if article == "" {
-			l.W.Printf("Missing article ID.\n")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		w.WriteHeader(ArticleMarkUnread(l, user.UID, article))
-	})
-
-	// /api/getunread
-	http.HandleFunc("/api/getunread", func(w http.ResponseWriter, r *http.Request) {
-		l := sessionlogger.NewSessionLogger("/api/getunread")
-
-		user, status := GetSessionData(l, w, r)
-		if status != http.StatusOK {
-			w.WriteHeader(status)
-			return
-		}
+	// GET /api/getunread
+	apiGroup.Get("/getunread", func(c fiber.Ctx) error {
+		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
+		user := c.Locals(userKey{}).(*WhoAmIData)
 
 		articles := GetUnread(l, user.UID)
 		if articles == nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		err := json.NewEncoder(w).Encode(articles)
-		if err != nil {
-			l.W.Printf("Error encoding payload. Error: %v\n", err)
-			return
-		}
+		return c.JSON(articles)
 	})
 
-	// /api/recentread
-	http.HandleFunc("/api/recentread", func(w http.ResponseWriter, r *http.Request) {
-		l := sessionlogger.NewSessionLogger("/api/recentread")
-
-		user, status := GetSessionData(l, w, r)
-		if status != http.StatusOK {
-			w.WriteHeader(status)
-			return
-		}
+	// GET /api/recentread
+	apiGroup.Get("/recentread", func(c fiber.Ctx) error {
+		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
+		user := c.Locals(userKey{}).(*WhoAmIData)
 
 		articles := GetRecentRead(l, user.UID)
 		if articles == nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
+			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		err := json.NewEncoder(w).Encode(articles)
-		if err != nil {
-			l.W.Printf("Error encoding payload. Error: %v\n", err)
-			return
-		}
+		return c.JSON(articles)
 	})
 
-	// /auth/login/google
-	http.HandleFunc("/auth/login/google", GoogleLoginEndpoint)
-	// /auth/redirect/google
-	http.HandleFunc("/auth/redirect/google", GoogleRedirectEndpoint)
-	// /auth/logout
-	http.HandleFunc("/auth/logout", LogoutEndpoint)
-	// /auth/whoami
-	http.HandleFunc("/auth/whoami", WhoAmIEndpoint)
+	if isTestMode() {
+		siteDir := "../Site"
+
+		app.Use("/", func(c fiber.Ctx) error {
+			path := c.Path()
+
+			if strings.HasPrefix(path, "/api") || strings.HasPrefix(path, "/auth") {
+				return c.Next()
+			}
+
+			filePath := filepath.Join(siteDir, path)
+			if info, err := os.Stat(filePath); err == nil && !info.IsDir() {
+				return c.SendFile(filePath)
+			}
+
+			return c.Type("html").SendFile(filepath.Join(siteDir, "index.html"))
+		})
+	}
 
 	go Background()
 
-	err := http.ListenAndServe(":80", nil)
-	if err != nil {
+	port := ":80"
+	if isTestMode() {
+		port = ":8080"
+	}
+	if err := app.Listen(port); err != nil {
 		panic(err)
 	}
 }

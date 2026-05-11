@@ -45,7 +45,7 @@ export const Feeds = (props) => {
 	let interval = useRef(null)
 
 	let update = useCallback(() => {
-		fetch("/api/feed/list", {
+		fetch("/api/feeds", {
 			credentials: 'include'
 		})
 			.then(r => {

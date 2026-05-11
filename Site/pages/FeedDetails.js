@@ -132,7 +132,7 @@ export const FeedDetails = (props) => {
 	let [renameMsg, setRenameMsg] = useState({ text: "", type: "" })
 
 	let update = useCallback((id, all) => {
-		fetch("/api/feed/details?id="+id, {
+		fetch("/api/feeds/"+id, {
 			credentials: 'include'
 		})
 			.then(r => {
@@ -156,7 +156,7 @@ export const FeedDetails = (props) => {
 			return
 		}
 
-		fetch("/api/feed/articles?id="+id, {
+		fetch("/api/feeds/"+id+"/articles", {
 			credentials: 'include'
 		})
 			.then(r => {
@@ -178,11 +178,11 @@ export const FeedDetails = (props) => {
 	}, [])
 
 	let pause = useCallback((shouldPause) => {
-		let url = `/api/feed/unpause?id=${props.id}`
-		if (shouldPause) {
-			url = `/api/feed/pause?id=${props.id}`
-		}
-		fetch(url).then(r => {
+		fetch("/api/feeds/"+props.id, {
+			method: 'PATCH',
+			credentials: 'include',
+			body: JSON.stringify({ paused: shouldPause })
+		}).then(r => {
 			if (r.ok) {
 				update(props.id, false)
 			}
@@ -196,8 +196,10 @@ export const FeedDetails = (props) => {
 			return
 		}
 
-		let url = `/api/feed/unsubscribe?id=${props.id}`
-		fetch(url).then(r => {
+		fetch("/api/feeds/"+props.id, {
+			method: 'DELETE',
+			credentials: 'include'
+		}).then(r => {
 			if (r.ok) {
 				route("/read/feeds")
 			}
@@ -213,9 +215,10 @@ export const FeedDetails = (props) => {
 			return
 		}
 
-		fetch(`/api/feed/rename?id=${props.id}&name=${encodeURIComponent(renameValue)}`, {
-			method: 'POST',
-			credentials: 'include'
+		fetch("/api/feeds/"+props.id, {
+			method: 'PATCH',
+			credentials: 'include',
+			body: JSON.stringify({ name: renameValue })
 		}).then(r => {
 			if (r.ok) {
 				update(props.id, false)

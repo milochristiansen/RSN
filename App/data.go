@@ -23,8 +23,8 @@ misrepresented as being the original software.
 package main
 
 import "time"
-import "net/http"
 
+import "github.com/gofiber/fiber/v3"
 import "github.com/teris-io/shortid"
 
 import "github.com/milochristiansen/sessionlogger"
@@ -114,7 +114,7 @@ func FeedListSubs(l *sessionlogger.Logger, feed string) []string {
 	return users
 }
 
-// /api/feed/list
+// GET /api/feeds
 // =====================================================================================================================
 
 type Feed struct {
@@ -146,7 +146,7 @@ func FeedList(l *sessionlogger.Logger, id string) []*Feed {
 	return feeds
 }
 
-// /api/feed/details (one row)
+// GET /api/feeds/:id
 // =====================================================================================================================
 
 func FeedDetails(l *sessionlogger.Logger, user, feed string) *Feed {
@@ -159,7 +159,7 @@ func FeedDetails(l *sessionlogger.Logger, user, feed string) *Feed {
 	return f
 }
 
-// /api/feed/articles
+// GET /api/feeds/:id/articles
 // =====================================================================================================================
 
 type Article struct {
@@ -193,7 +193,7 @@ func FeedArticles(l *sessionlogger.Logger, user, feed string) []*Article {
 	return articles
 }
 
-// /api/feed/subscribe
+// POST /api/feeds
 // =====================================================================================================================
 
 var feedIDService <-chan string
@@ -222,7 +222,7 @@ func FeedSubscribe(l *sessionlogger.Logger, id, url, name string) int {
 	err := Queries["FeedExistsByURL"].Preped.QueryRow(url).Scan(&feed)
 	if err != nil {
 		l.E.Printf("DB existence check failed for new feed %v, error: %v\n", url, err)
-		return http.StatusInternalServerError
+		return fiber.StatusInternalServerError
 	}
 	if feed == "" {
 		// Create new feed.
@@ -230,7 +230,7 @@ func FeedSubscribe(l *sessionlogger.Logger, id, url, name string) int {
 		_, err = Queries["FeedAdd"].Preped.Exec(feed, url)
 		if err != nil {
 			l.E.Printf("Cannot insert feed %v into db, error: %v\n", url, err)
-			return http.StatusInternalServerError
+			return fiber.StatusInternalServerError
 		}
 	}
 
@@ -238,30 +238,30 @@ func FeedSubscribe(l *sessionlogger.Logger, id, url, name string) int {
 	err = Queries["FeedAlreadySubscibed"].Preped.QueryRow(id, feed).Scan(&ok)
 	if err != nil {
 		l.E.Printf("DB existence check failed for subscribed feed %v by user %v, error: %v\n", feed, id, err)
-		return http.StatusInternalServerError
+		return fiber.StatusInternalServerError
 	}
 	if ok == 1 {
 		l.W.Printf("Feed %v already subscribed by user %v.\n", feed, id)
 		// This isn't a straight up error, but it isn't OK either.
-		return http.StatusAccepted
+		return fiber.StatusAccepted
 	}
 
 	_, err = Queries["FeedSubscibe"].Preped.Exec(id, feed, name)
 	if err != nil {
 		l.E.Printf("Failed subscribing feed %v as user %v, error: %v\n", feed, id, err)
-		return http.StatusInternalServerError
+		return fiber.StatusInternalServerError
 	}
-	return http.StatusOK
+	return fiber.StatusOK
 }
 
-// /api/feed/unsubscribe
+// DELETE /api/feeds/:id
 // =====================================================================================================================
 
 func FeedUnsub(l *sessionlogger.Logger, user, feed string) int {
 	_, err := Queries["FeedUnsub1"].Preped.Exec(user, feed)
 	if err != nil {
 		l.E.Printf("Failed unsubscribing feed %v as user %v, error: %v\n", feed, user, err)
-		return http.StatusInternalServerError
+		return fiber.StatusInternalServerError
 	}
 
 	// Now check if the feed has no subscribers.
@@ -269,98 +269,98 @@ func FeedUnsub(l *sessionlogger.Logger, user, feed string) int {
 	err = Queries["FeedHasSubs"].Preped.QueryRow(feed).Scan(&hassub)
 	if err != nil {
 		l.E.Printf("Feed subscriber check failed for feed %v, error: %v\n", feed, err)
-		return http.StatusInternalServerError
+		return fiber.StatusInternalServerError
 	}
 	if hassub == 1 {
 		// If the feed still has other subscribers delete our paused flags and slink off into the night.
 		_, err = Queries["FeedUnsub2"].Preped.Exec(user, feed)
 		if err != nil {
 			l.E.Printf("Failed unsubscribing feed %v as user %v, error: %v\n", feed, user, err)
-			return http.StatusInternalServerError
+			return fiber.StatusInternalServerError
 		}
-		return http.StatusOK
+		return fiber.StatusOK
 	}
 
 	// No subscribers left, delete feed for real.
 	_, err = Queries["FeedDelete"].Preped.Exec(feed)
 	if err != nil {
 		l.E.Printf("Failed deleting feed %v, error: %v\n", feed, err)
-		return http.StatusInternalServerError
+		return fiber.StatusInternalServerError
 	}
-	return http.StatusOK
+	return fiber.StatusOK
 }
 
-// /api/feed/pause
+// PATCH /api/feeds/:id (pause/unpause/rename)
 // =====================================================================================================================
+
+type FeedPatchData struct {
+	Name   string  `json:"name"`
+	Paused *bool   `json:"paused"`
+}
 
 func FeedPause(l *sessionlogger.Logger, user, feed string) int {
 	_, err := Queries["FeedPause"].Preped.Exec(user, feed)
 	if err != nil {
 		l.E.Printf("Failed pausing feed %v, error: %v\n", feed, err)
-		return http.StatusInternalServerError
+		return fiber.StatusInternalServerError
 	}
 
 	_, err = Queries["CleanPausedFlags"].Preped.Exec()
 	if err != nil {
 		l.W.Printf("Failed cleaning pause flags, error: %v\n", err)
 	}
-	return http.StatusOK
+	return fiber.StatusOK
 }
-
-// /api/feed/unpause
-// =====================================================================================================================
 
 func FeedUnpause(l *sessionlogger.Logger, user, feed string) int {
 	_, err := Queries["FeedUnpause"].Preped.Exec(user, feed)
 	if err != nil {
 		l.E.Printf("Failed unpausing feed %v, error: %v\n", feed, err)
-		return http.StatusInternalServerError
+		return fiber.StatusInternalServerError
 	}
-	return http.StatusOK
+	return fiber.StatusOK
 }
-
-// /api/feed/rename
-// =====================================================================================================================
 
 func FeedRename(l *sessionlogger.Logger, user, feed, name string) int {
 	_, err := Queries["FeedRename"].Preped.Exec(user, feed, name)
 	if err != nil {
 		l.E.Printf("Failed renaming feed %v, error: %v\n", feed, err)
-		return http.StatusInternalServerError
+		return fiber.StatusInternalServerError
 	}
-	return http.StatusOK
+	return fiber.StatusOK
 }
 
-// /api/article/read
+// PATCH /api/articles/:id (read/unread)
 // =====================================================================================================================
+
+type ArticlePatchData struct {
+	Read *bool `json:"read"`
+}
 
 func ArticleMarkRead(l *sessionlogger.Logger, user, article string) int {
 	_, err := Queries["ArticleRead"].Preped.Exec(user, article)
 	if err != nil {
 		l.E.Printf("Failed marking article (%v) read, error: %v\n", article, err)
-		return http.StatusInternalServerError
+		return fiber.StatusInternalServerError
 	}
 
 	_, err = Queries["CleanReadFlags"].Preped.Exec()
 	if err != nil {
 		l.W.Printf("Failed cleaning pause flags, error: %v\n", err)
 	}
-	return http.StatusOK
+	return fiber.StatusOK
 }
-
-// /api/article/unread
-// =====================================================================================================================
 
 func ArticleMarkUnread(l *sessionlogger.Logger, user, article string) int {
 	_, err := Queries["ArticleUnread"].Preped.Exec(user, article)
 	if err != nil {
 		l.E.Printf("Failed marking article (%v) unread, error: %v\n", article, err)
-		return http.StatusInternalServerError
+		return fiber.StatusInternalServerError
 	}
-	return http.StatusOK
+	return fiber.StatusOK
 }
 
-// /api/getunread
+// GET /api/getunread
 // =====================================================================================================================
 
 type UnreadArticle struct {
@@ -428,7 +428,7 @@ func GetUnread(l *sessionlogger.Logger, user string) []*UnreadData {
 	return data
 }
 
-// /api/recentread
+// GET /api/recentread
 // =====================================================================================================================
 
 // Same as UnreadArticle, but with the addition of a time when it was added to the read flags.
