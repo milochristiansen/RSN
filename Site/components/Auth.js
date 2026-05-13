@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "preact/hooks"
 import { html } from "/header.js"
 import { createContext } from "preact"
+import { subscribePush, clearBackendSubscription } from "/components/Vapid.js"
 
 export const AuthContext = createContext({ok: false, refresh: () => {}, whoami: null})
 
@@ -35,6 +36,18 @@ export function AuthProvider(props) {
 				return r.json()
 			})
 			.then(whoami => {
+				const storedEndpoint = localStorage.getItem('pushEndpoint') || ''
+				
+				if (whoami.pushSubscribed && !storedEndpoint) {
+					if (Notification.permission === 'granted') {
+						subscribePush(whoami.uid)
+					} else {
+						clearBackendSubscription(whoami.uid)
+					}
+				} else if (!whoami.pushSubscribed && storedEndpoint) {
+					localStorage.removeItem('pushEndpoint')
+				}
+				
 				setAuth({ok: true, refresh: refresh, whoami: whoami})
 				localStorage.setItem('whoami', JSON.stringify(whoami))
 			})

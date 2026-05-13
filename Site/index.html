@@ -239,6 +239,7 @@
 		const RecentRead = lazy(() => import('/pages/RecentRead.js').then(m => m.RecentRead))
 		const Feeds = lazy(() => import('/pages/Feeds.js').then(m => m.Feeds))
 		const FeedDetails = lazy(() => import('/pages/FeedDetails.js').then(m => m.FeedDetails))
+		const Push = lazy(() => import('/pages/Push.js').then(m => m.Push))
 
 		render(html`
 			<${AuthProvider}><${ThemeProvider}><${LocationProvider}>
@@ -278,6 +279,8 @@
 
 							<${FeedDetails} path="/read/feed/:id" />
 
+							<${Push} path="/push" />
+
 							<${Page404} default />
 						<//>
 					`}<//>
@@ -312,6 +315,13 @@
 				<//>
 			<//><//><//>
 		`, document.body)
+		</script>
+		<script>
+		if ('serviceWorker' in navigator) {
+			navigator.serviceWorker.register('/service-worker.js')
+				.then(reg => console.log('Service worker registered', reg.scope))
+				.catch(err => console.error('Service worker registration failed', err))
+		}
 		</script>
 		<noscript>
 			<h1>Please enable JavaScript to continue</h1>

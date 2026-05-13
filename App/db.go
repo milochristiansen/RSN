@@ -92,15 +92,148 @@ create table if not exists Subscribed (
 
 	foreign key (Feed) references Feeds(ID) on delete cascade
 );
+
+create table if not exists PushSubscriptions (
+	User text not null,
+	Endpoint text not null,
+	P256DH text not null,
+	Auth text not null,
+
+	foreign key (User) references Users(ID) on delete cascade
+);
 `
 
 var Queries = map[string]*queryHolder{
-	// Auth UID lookup and creation.
+	// Auth
 	"GetUID": {`
 		select ID from Users where Provider = ?1 and Subject = ?2;
 	`, nil},
 	"CreatNewUser": {`
 		insert into Users (ID, Provider, Subject) values (?1, ?2, ?3);
+	`, nil},
+
+	// Feeds
+	// GET /api/feeds
+	"FeedList": {`
+		select ID, (
+				select Name from Subscribed where Feed = Feeds.ID and User = ?1
+			) as Name, URL, (
+			ID in (select Feed from PausedFlags where User = ?1)
+		), HTTPError from Feeds where (
+			ID in (select Feed from Subscribed where User = ?1)
+		) order by Name;
+	`, nil},
+	// GET /api/feeds/:id
+	"FeedDetails": {`
+		select ID, (
+			select Name from Subscribed where Feed = ?2 and User = ?1
+		), URL, (
+			ID in (select Feed from PausedFlags where User = ?1)
+		), HTTPError from Feeds where (
+			ID = ?2 and
+			ID in (select Feed from Subscribed where User = ?1)
+		);
+	`, nil},
+	// GET /api/feeds/:id/articles
+	"FeedArticles": {`
+		select ID, Title, URL, Published, (
+			ID in (select Article from ReadFlags where User = ?1)
+		) from Articles where (
+			Feed = ?2 and
+			Feed in (select Feed from Subscribed where User = ?1)
+		) order by Published;
+	`, nil},
+	// POST /api/feeds
+	"FeedExistsByURL": {`
+		select ID from Feeds where URL = ?1 union select "" order by 1 desc limit 1;
+	`, nil},
+	"FeedAdd": {`
+		insert into Feeds (ID, URL) values (?1, ?2);
+	`, nil},
+	"FeedAlreadySubscibed": {`
+		select exists(select 1 from Subscribed where User = ?1 and Feed = ?2);
+	`, nil},
+	"FeedSubscibe": {`
+		insert into Subscribed (User, Feed, Name) values (?1, ?2, ?3);
+	`, nil},
+	// DELETE /api/feeds/:id
+	"FeedUnsub1": {`
+		delete from Subscribed where User = ?1 and Feed = ?2;
+	`, nil},
+	"FeedUnsub2": {`
+		delete from PausedFlags where User = ?1 and Feed = ?2;
+	`, nil},
+	"FeedHasSubs": {`
+		select exists(select 1 from Subscribed where Feed = ?1 limit 1);
+	`, nil},
+	"FeedDelete": {`
+		delete from Feeds where ID = ?1;
+	`, nil},
+	// PATCH /api/feeds/:id (pause)
+	"FeedExists": {`
+		select exists(select 1 from Feeds where ID = ?1 limit 1);
+	`, nil},
+	"FeedPause": {`
+		insert into PausedFlags (User, Feed) values (?1, ?2);
+	`, nil},
+	"CleanPausedFlags": {`
+		delete from PausedFlags where rowid not in (
+			select min(rowid) from PausedFlags group by User, Feed
+		);
+	`, nil},
+	// PATCH /api/feeds/:id (unpause)
+	"FeedUnpause": {`
+		delete from PausedFlags where User = ?1 and Feed = ?2;
+	`, nil},
+	// PATCH /api/feeds/:id (rename)
+	"FeedRename": {`
+		update Subscribed set Name = ?3 where User = ?1 and Feed = ?2;
+	`, nil},
+
+	// Articles
+	// PATCH /api/articles/:id (mark read)
+	"ArticleRead": {`
+		insert into ReadFlags (User, Article) values (?1, ?2);
+	`, nil},
+	"CleanReadFlags": {`
+		delete from ReadFlags where rowid not in (
+			select min(rowid) from ReadFlags group by User, Article
+		);
+	`, nil},
+	// PATCH /api/articles/:id (mark unread)
+	"ArticleUnread": {`
+		delete from ReadFlags where User = ?1 and Article = ?2;
+	`, nil},
+	// GET /api/getunread
+	"GetUnread": {`
+		select a.ID, a.Title, a.URL, fn.Name, fn.Feed, a.Published from Articles a
+		inner join Subscribed fn on fn.Feed = a.Feed and fn.User = ?1 where (
+			not a.ID in (select Article from ReadFlags where User = ?1) and
+			not a.Feed in (select Feed from PausedFlags where User = ?1)
+		) order by Published;
+	`, nil},
+	// GET /api/recentread
+	"GetRecentRead": {`
+		select a.ID, a.Title, a.URL, fn.Name, fn.Feed, a.Published, rf.ReadTime from Articles a
+		inner join Subscribed fn on fn.Feed = a.Feed and fn.User = ?1
+		inner join ReadFlags rf on rf.Article = a.ID and rf.User = ?1
+		order by rf.ReadTime desc limit 25;
+	`, nil},
+
+	// Push subscriptions
+	// POST /api/push/subscription
+	"PushSubInsert": {`
+		insert into PushSubscriptions (User, Endpoint, P256DH, Auth) values (?1, ?2, ?3, ?4);
+	`, nil},
+	"PushSubGetByUser": {`
+		select Endpoint, P256DH, Auth from PushSubscriptions where User = ?1;
+	`, nil},
+	// DELETE /api/push/subscription
+	"PushSubDelete": {`
+		delete from PushSubscriptions where User = ?1 and Endpoint = ?2;
+	`, nil},
+	"PushSubExists": {`
+		select exists(select 1 from PushSubscriptions where User = ?1 and Endpoint = ?2);
 	`, nil},
 
 	// Background updater
@@ -114,116 +247,10 @@ var Queries = map[string]*queryHolder{
 		insert into Articles (ID, Feed, Title, URL, Published) values (?1, ?2, ?3, ?4, ?5);
 	`, nil},
 	"FeedListSubs": {`
-		select User from Subscribed where Feed = ?1;
+		select User, Name from Subscribed where Feed = ?1;
 	`, nil},
 	"UpdateFeedErrState": {`
 		update Feeds set HTTPError = ?2 where ID = ?1;
-	`, nil},
-
-	// /api/feed/list
-	"FeedList": {`
-		select ID, (
-				select Name from Subscribed where Feed = Feeds.ID and User = ?1
-			) as Name, URL, (
-			ID in (select Feed from PausedFlags where User = ?1)
-		), HTTPError from Feeds where (
-			ID in (select Feed from Subscribed where User = ?1)
-		) order by Name;
-	`, nil},
-	// /api/feed/details (one row)
-	"FeedDetails": {`
-		select ID, (
-			select Name from Subscribed where Feed = ?2 and User = ?1
-		), URL, (
-			ID in (select Feed from PausedFlags where User = ?1)
-		), HTTPError from Feeds where (
-			ID = ?2 and
-			ID in (select Feed from Subscribed where User = ?1)
-		);
-	`, nil},
-	// /api/feed/articles
-	"FeedArticles": {`
-		select ID, Title, URL, Published, (
-			ID in (select Article from ReadFlags where User = ?1)
-		) from Articles where (
-			Feed = ?2 and
-			Feed in (select Feed from Subscribed where User = ?1)
-		) order by Published;
-	`, nil},
-	// /api/feed/subscribe
-	"FeedExistsByURL": {`
-		select ID from Feeds where URL = ?1 union select "" order by 1 desc limit 1;
-	`, nil},
-	"FeedAdd": {`
-		insert into Feeds (ID, URL) values (?1, ?2);
-	`, nil},
-	"FeedAlreadySubscibed": {`
-		select exists(select 1 from Subscribed where User = ?1 and Feed = ?2);
-	`, nil},
-	"FeedSubscibe": {`
-		insert into Subscribed (User, Feed, Name) values (?1, ?2, ?3);
-	`, nil},
-	// /api/feed/unsubscribe
-	"FeedUnsub1": {`
-		delete from Subscribed where User = ?1 and Feed = ?2;
-	`, nil},
-	"FeedUnsub2": {`
-		delete from PausedFlags where User = ?1 and Feed = ?2;
-	`, nil},
-	"FeedHasSubs": {`
-		select exists(select 1 from Subscribed where Feed = ?1 limit 1);
-	`, nil},
-	"FeedDelete": {`
-		delete from Feeds where ID = ?1;
-	`, nil},
-	// /api/feed/pause
-	"FeedExists": {`
-		select exists(select 1 from Feeds where ID = ?1 limit 1);
-	`, nil},
-	"FeedPause": {`
-		insert into PausedFlags (User, Feed) values (?1, ?2);
-	`, nil},
-	"CleanPausedFlags":{`
-		delete from PausedFlags where rowid not in (
-			select min(rowid) from PausedFlags group by User, Feed
-		);
-	`, nil},
-	// /api/feed/unpause
-	"FeedUnpause": {`
-		delete from PausedFlags where User = ?1 and Feed = ?2;
-	`, nil},
-	// /api/feed/rename
-	"FeedRename": {`
-		update Subscribed set Name = ?3 where User = ?1 and Feed = ?2;
-	`, nil},
-
-	// /api/article/read
-	"ArticleRead": {`
-		insert into ReadFlags (User, Article) values (?1, ?2);
-	`, nil},
-	"CleanReadFlags":{`
-		delete from ReadFlags where rowid not in (
-			select min(rowid) from ReadFlags group by User, Article
-		);
-	`, nil},
-	// /api/article/unread
-	"ArticleUnread": {`
-		delete from ReadFlags where User = ?1 and Article = ?2;
-	`, nil},
-	// /api/getunread
-	"GetUnread": {`
-		select a.ID, a.Title, a.URL, fn.Name, fn.Feed, a.Published from Articles a
-		inner join Subscribed fn on fn.Feed = a.Feed and fn.User = ?1 where (
-			not a.ID in (select Article from ReadFlags where User = ?1) and
-			not a.Feed in (select Feed from PausedFlags where User = ?1)
-		) order by Published;
-	`, nil},
-	// /api/recentread
-	"GetRecentRead":{`
-		select a.ID, a.Title, a.URL, fn.Name, fn.Feed, a.Published, rf.ReadTime from Articles a
-		inner join Subscribed fn on fn.Feed = a.Feed and fn.User = ?1
-		inner join ReadFlags rf on rf.Article = a.ID and rf.User = ?1 
-		order by rf.ReadTime desc limit 25;
 	`, nil},
 }
 

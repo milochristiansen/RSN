@@ -46,6 +46,7 @@ export const AddFeed = (props) => {
 		fetch("/api/feeds", {
 			method: "POST",
 			credentials: "include",
+			headers: {'Content-Type': 'application/json'},
 			body: JSON.stringify({
 				URL: String(url),
 				Name: String(name)

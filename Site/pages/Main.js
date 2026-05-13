@@ -33,9 +33,11 @@ export const Main = (props) => {
 			hypothetical).
 		</p>
 		<p>
-			In previous versions of the project it would actually notify you of new content via a browser extension,
-			but this version does not have anything similar implemented. I debated using push notifications to alert
-			you to new content, but ended up not doing it for this iteration of the app. Maybe in the future?
+			If you want to get push notifications for new content, that is now possible. There is an 
+			${' '}<a href="/push">experimental settings page</a> that will allow you to subscribe, unsubscribe,
+			and view information about your subscription. If you choose to subscribe, you will need to allow
+			notifications when prompted. Don't worry, if you decide you don't like it you can always go back and
+			unsubscribe. This is a relatively new feature, and feedback is appreciated.
 		</p>
 		<p>
 			This project was made for my personal use. I use it every day for all my reading needs, so it

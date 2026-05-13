@@ -33,23 +33,21 @@ import (
 
 var fp = gofeed.NewParser()
 
+// Background loops forever doing feed updates and sending push notifications roughly once per minute (plus however long it takes to actually do the update).
 func Background() {
-	l := sessionlogger.NewMasterLogger()
-	l.I.Println("Starting background process.")
-
-	// There are a lot of places in here where an error can occur, but we simply log+ignore
 	for {
+		l := sessionlogger.NewSessionLogger("background-update")
 		l.I.Println("Starting update cycle.")
 
-		// updated := map[string]bool{}
-
-		// For every single feed in the DB
 		feeds := GetAllFeeds(l)
 		if feeds == nil {
 			continue
 		}
+
+		// [userID][feedID]{data for feed}
+		collation := map[string]map[string]*FeedPushData{}
+
 		for _, data := range feeds {
-			// Check if there are new items
 			url, feed := data[0], data[1]
 
 			f, err := fp.ParseURL(url)
@@ -66,11 +64,16 @@ func Background() {
 				continue
 			}
 
-			UpdateFeedErrorState(l, feed, 200) // May not actually be a 200, but it will be a 200 class.
+			UpdateFeedErrorState(l, feed, 200)
+
+			subs := FeedListSubs(l, feed)
+			if len(subs) == 0 {
+				l.W.Printf("Feed %v has no subscribers, deleting\n", feed)
+				FeedDelete(l, feed)
+				continue
+			}
 
 			for _, item := range f.Items {
-				// Check if we know of the item
-
 				exists, ok := ArticleExists(l, item.Link)
 				if !ok || exists {
 					continue
@@ -85,24 +88,76 @@ func Background() {
 					}
 				}
 
-				// Strip the most common way of inserting the feed title into the article title.
 				title := item.Title
-				if strings.HasPrefix(title, f.Title + " - ") {
-					title = strings.TrimPrefix(title, f.Title + " - ")
+				if strings.HasPrefix(title, f.Title+" - ") {
+					title = strings.TrimPrefix(title, f.Title+" - ")
 				}
 
 				ArticleAdd(l, feed, title, item.Link, *t)
 
-				// users := FeedListSubs(l, feed)
-				// if users == nil {
-				// 	continue
-				// }
-				// for _, user := range users {
-				// 	updated[user] = true
-				// }
+				for _, sub := range subs {
+					userID, feedName := sub[0], sub[1]
+
+			if collation[userID] == nil {
+					collation[userID] = map[string]*FeedPushData{}
+				}
+
+				entry, exists := collation[userID][feed]
+				if !exists {
+					entry = &FeedPushData{
+						FeedName: feedName,
+					}
+					collation[userID][feed] = entry
+				}
+
+				entry.ArticleCount++
+				if entry.FirstArticleTitle == "" {
+					entry.FirstArticleTitle = title
+				}
+				}
 			}
+		}
+
+		userFeeds := map[string][]*FeedPushData{}
+		for userID, feedMap := range collation {
+			feeds := make([]*FeedPushData, 0, len(feedMap))
+			for _, entry := range feedMap {
+				feeds = append(feeds, entry)
+			}
+			userFeeds[userID] = feeds
+		}
+
+		if len(userFeeds) > 0 {
+			go sendNotifications(l, userFeeds)
 		}
 
 		time.Sleep(1 * time.Minute)
 	}
+}
+
+// sendNotifications sends push notifications for new content found during the last background update.
+func sendNotifications(l *sessionlogger.Logger, userFeeds map[string][]*FeedPushData) {
+	numWorkers := 10
+	jobs := make(chan struct {
+		userID string
+		feeds  []*FeedPushData
+	}, len(userFeeds))
+
+	for w := 0; w < numWorkers; w++ {
+		go func() {
+			for job := range jobs {
+				if err := SendPushNotification(l, job.userID, job.feeds); err != nil {
+					l.E.Printf("Failed to send push notification to %v: %v\n", job.userID, err)
+				}
+			}
+		}()
+	}
+
+	for userID, feeds := range userFeeds {
+		jobs <- struct {
+			userID string
+			feeds  []*FeedPushData
+		}{userID, feeds}
+	}
+	close(jobs)
 }

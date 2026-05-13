@@ -95,12 +95,10 @@ func init() {
 
 // WhoAmIData holds the data that will be returned by the whoami endpoint.
 type WhoAmIData struct {
-	// Fetched fresh every time the whoami endpoint is called
-	Email   string // User's email
-	Subject string // The remote provider user ID
-
-	// Stored in the session
-	UID string // User DB ID
+	Email          string `json:"email"`
+	Subject        string `json:"sub"`
+	UID            string `json:"uid"`
+	PushSubscribed bool   `json:"pushSubscribed"`
 }
 
 // AuthMiddleware validates the JWT session cookie, refreshes the OAuth token,
@@ -131,10 +129,11 @@ func AuthMiddleware() fiber.Handler {
 
 		// Extract session claims
 		claims := &SessionClaims{
-			Token:     getStringClaim(token, "token"),
-			UID:       getStringClaim(token, jwt.SubjectKey),
-			Email:     getStringClaim(token, "email"),
-			GoogleSub: getStringClaim(token, "google_sub"),
+			Token:        getStringClaim(token, "token"),
+			UID:          getStringClaim(token, jwt.SubjectKey),
+			Email:        getStringClaim(token, "email"),
+			GoogleSub:    getStringClaim(token, "google_sub"),
+			PushEndpoint: getStringClaim(token, "push_endpoint"),
 		}
 
 		if claims.Token == "" || claims.UID == "" {
@@ -142,27 +141,22 @@ func AuthMiddleware() fiber.Handler {
 			return c.SendStatus(fiber.StatusForbidden)
 		}
 
+		// Make sure if the user thinks they are subscribed that they actually are.
+		if claims.PushEndpoint != "" && !PushSubscriptionExists(claims.UID, claims.PushEndpoint) {
+			claims.PushEndpoint = ""
+		}
+
 		// If we are in test mode just barf out what we have and do not call Google APIs.
 		if isTestMode() {
-			newClaims := &SessionClaims{
-				Token:      claims.Token,
-				UID:        claims.UID,
-				Email:      claims.Email,
-				GoogleSub:  getStringClaim(token, "google_sub"),
-				Expiration: time.Now().Add(sessionExpiry),
-				IssuedAt:   time.Now(),
-			}
+			claims.Expiration = time.Now().Add(sessionExpiry)
+			claims.IssuedAt = time.Now()
 
-			if err := setSessionCookie(c, newClaims); err != nil {
+			if err := setSessionCookie(c, claims); err != nil {
 				l.W.Printf("Error updating session: %v\n", err)
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 
-			c.Locals(userKey{}, &WhoAmIData{
-				Email:   claims.Email,
-				Subject: claims.GoogleSub,
-				UID:     claims.UID,
-			})
+			c.Locals(userKey{}, claims)
 
 			return c.Next()
 		}
@@ -196,26 +190,18 @@ func AuthMiddleware() fiber.Handler {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
-		newClaims := &SessionClaims{
-			Token:      string(refreshedTokenJSON),
-			UID:        claims.UID,
-			Email:      user.Email,
-			GoogleSub:  getStringClaim(token, "google_sub"),
-			Expiration: time.Now().Add(sessionExpiry),
-			IssuedAt:   time.Now(),
-		}
+		claims.Token = string(refreshedTokenJSON)
+		claims.Email = user.Email
+		claims.Expiration = time.Now().Add(sessionExpiry)
+		claims.IssuedAt = time.Now()
 
-		if err := setSessionCookie(c, newClaims); err != nil {
+		if err := setSessionCookie(c, claims); err != nil {
 			l.W.Printf("Error updating session: %v\n", err)
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
 
 		// Store user info on context
-		c.Locals(userKey{}, &WhoAmIData{
-			Email:   user.Email,
-			Subject: user.Subject,
-			UID:     claims.UID,
-		})
+		c.Locals(userKey{}, claims)
 
 		return c.Next()
 	}
@@ -274,6 +260,12 @@ func LogoutEndpoint(c fiber.Ctx) error {
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
 		}
+	}
+
+	// Remove push subscription if one exists.
+	claims := c.Locals(userKey{}).(*SessionClaims)
+	if claims != nil && claims.UID != "" && claims.PushEndpoint != "" {
+		RemovePushSubscription(claims.UID, claims.PushEndpoint)
 	}
 
 	// Clear the session cookie

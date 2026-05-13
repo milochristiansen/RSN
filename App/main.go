@@ -61,9 +61,14 @@ func main() {
 
 	// /auth/whoami is special, as it is an authenticated route in an otherwise unauthenticated group.
 	authGroup.Get("/whoami", AuthMiddleware(), func(c fiber.Ctx) error {
-		user := c.Locals(userKey{}).(*WhoAmIData)
+		claims := c.Locals(userKey{}).(*SessionClaims)
 
-		jd, err := json.MarshalIndent(user, "", "    ")
+		jd, err := json.MarshalIndent(&WhoAmIData{
+			Email:          claims.Email,
+			Subject:        claims.GoogleSub,
+			UID:            claims.UID,
+			PushSubscribed: claims.PushEndpoint != "",
+		}, "", "    ")
 		if err != nil {
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
@@ -76,7 +81,7 @@ func main() {
 	// GET /api/feeds - list all feeds
 	apiGroup.Get("/feeds", func(c fiber.Ctx) error {
 		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
-		user := c.Locals(userKey{}).(*WhoAmIData)
+		user := c.Locals(userKey{}).(*SessionClaims)
 
 		feeds := FeedList(l, user.UID)
 		if feeds == nil {
@@ -89,7 +94,7 @@ func main() {
 	// GET /api/feeds/:id - get feed details
 	apiGroup.Get("/feeds/:id", func(c fiber.Ctx) error {
 		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
-		user := c.Locals(userKey{}).(*WhoAmIData)
+		user := c.Locals(userKey{}).(*SessionClaims)
 
 		id := c.Params("id")
 		if id == "" {
@@ -108,7 +113,7 @@ func main() {
 	// GET /api/feeds/:id/articles - get articles for a feed
 	apiGroup.Get("/feeds/:id/articles", func(c fiber.Ctx) error {
 		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
-		user := c.Locals(userKey{}).(*WhoAmIData)
+		user := c.Locals(userKey{}).(*SessionClaims)
 
 		id := c.Params("id")
 		if id == "" {
@@ -127,7 +132,7 @@ func main() {
 	// POST /api/feeds - subscribe to a feed
 	apiGroup.Post("/feeds", func(c fiber.Ctx) error {
 		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
-		user := c.Locals(userKey{}).(*WhoAmIData)
+		user := c.Locals(userKey{}).(*SessionClaims)
 
 		if int64(len(c.Body())) > MaxBodyBytes {
 			return c.SendStatus(fiber.StatusBadRequest)
@@ -152,7 +157,7 @@ func main() {
 	// DELETE /api/feeds/:id - unsubscribe from a feed
 	apiGroup.Delete("/feeds/:id", func(c fiber.Ctx) error {
 		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
-		user := c.Locals(userKey{}).(*WhoAmIData)
+		user := c.Locals(userKey{}).(*SessionClaims)
 
 		id := c.Params("id")
 		if id == "" {
@@ -167,7 +172,7 @@ func main() {
 	// PATCH /api/feeds/:id - pause/unpause/rename a feed
 	apiGroup.Patch("/feeds/:id", func(c fiber.Ctx) error {
 		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
-		user := c.Locals(userKey{}).(*WhoAmIData)
+		user := c.Locals(userKey{}).(*SessionClaims)
 
 		id := c.Params("id")
 		if id == "" {
@@ -201,7 +206,7 @@ func main() {
 	// PATCH /api/articles/:id - mark article as read/unread
 	apiGroup.Patch("/articles/:id", func(c fiber.Ctx) error {
 		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
-		user := c.Locals(userKey{}).(*WhoAmIData)
+		user := c.Locals(userKey{}).(*SessionClaims)
 
 		id := c.Params("id")
 		if id == "" {
@@ -231,7 +236,7 @@ func main() {
 	// GET /api/getunread
 	apiGroup.Get("/getunread", func(c fiber.Ctx) error {
 		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
-		user := c.Locals(userKey{}).(*WhoAmIData)
+		user := c.Locals(userKey{}).(*SessionClaims)
 
 		articles := GetUnread(l, user.UID)
 		if articles == nil {
@@ -244,7 +249,7 @@ func main() {
 	// GET /api/recentread
 	apiGroup.Get("/recentread", func(c fiber.Ctx) error {
 		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
-		user := c.Locals(userKey{}).(*WhoAmIData)
+		user := c.Locals(userKey{}).(*SessionClaims)
 
 		articles := GetRecentRead(l, user.UID)
 		if articles == nil {
@@ -252,6 +257,62 @@ func main() {
 		}
 
 		return c.JSON(articles)
+	})
+
+	// POST /api/push/subscription
+	apiGroup.Post("/push/subscription", func(c fiber.Ctx) error {
+		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
+		claims := c.Locals(userKey{}).(*SessionClaims)
+
+		var data PushSubscribeRequest
+		if err := c.Bind().Body(&data); err != nil {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		if data.Endpoint == "" || data.P256DH == "" || data.Auth == "" {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		if err := RegisterPushSubscription(claims.UID, data.Endpoint, data.P256DH, data.Auth); err != nil {
+			l.E.Printf("Failed to register push subscription for user %v: %v\n", claims.UID, err)
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if err := UpdateSessionPushEndpoint(c, data.Endpoint); err != nil {
+			l.E.Printf("Failed to update session push endpoint for user %v: %v\n", claims.UID, err)
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.SendStatus(fiber.StatusOK)
+	})
+
+	// GET /api/push/vapid
+	apiGroup.Get("/push/vapid", func(c fiber.Ctx) error {
+		return c.JSON(map[string]string{
+			"publicKey": VAPIDPublicKey,
+		})
+	})
+
+	// DELETE /api/push/subscription
+	apiGroup.Delete("/push/subscription", func(c fiber.Ctx) error {
+		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
+		claims := c.Locals(userKey{}).(*SessionClaims)
+
+		if claims.PushEndpoint == "" {
+			return c.SendStatus(fiber.StatusNotFound)
+		}
+
+		if err := RemovePushSubscription(claims.UID, claims.PushEndpoint); err != nil {
+			l.E.Printf("Failed to remove push subscription for user %v: %v\n", claims.UID, err)
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if err := UpdateSessionPushEndpoint(c, ""); err != nil {
+			l.E.Printf("Failed to clear session push endpoint for user %v: %v\n", claims.UID, err)
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.SendStatus(fiber.StatusOK)
 	})
 
 	if isTestMode() {

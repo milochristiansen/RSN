@@ -47,12 +47,13 @@ const sessionExpiry = 12 * time.Hour
 
 // SessionClaims holds the decrypted session data stored inside the JWT.
 type SessionClaims struct {
-	Token      string    `json:"token"`
-	UID        string    `json:"uid"`
-	Email      string    `json:"email"`
-	GoogleSub  string    `json:"google_sub"`
-	Expiration time.Time `json:"exp"`
-	IssuedAt   time.Time `json:"iat"`
+	Token        string    `json:"token"`
+	UID          string    `json:"uid"`
+	Email        string    `json:"email"`
+	GoogleSub    string    `json:"google_sub"`
+	PushEndpoint string    `json:"push_endpoint"`
+	Expiration   time.Time `json:"exp"`
+	IssuedAt     time.Time `json:"iat"`
 }
 
 // LoginClaims holds the OAuth CSRF state and return URL stored inside the login JWT.
@@ -95,6 +96,7 @@ func setSessionCookie(c fiber.Ctx, claims *SessionClaims) error {
 	t.Set("token", claims.Token)
 	t.Set("email", claims.Email)
 	t.Set("google_sub", claims.GoogleSub)
+	t.Set("push_endpoint", claims.PushEndpoint)
 	t.Set(jwt.ExpirationKey, claims.Expiration)
 	t.Set(jwt.IssuedAtKey, claims.IssuedAt)
 
@@ -120,6 +122,18 @@ func setSessionCookie(c fiber.Ctx, claims *SessionClaims) error {
 	})
 
 	return nil
+}
+
+// UpdateSessionPushEndpoint updates the push endpoint in the session cookie.
+func UpdateSessionPushEndpoint(c fiber.Ctx, endpoint string) error {
+	claims := c.Locals(userKey{}).(*SessionClaims)
+	if claims == nil {
+		return fmt.Errorf("no session claims found")
+	}
+
+	claims.PushEndpoint = endpoint
+
+	return setSessionCookie(c, claims)
 }
 
 // extractAccessToken decrypts the JWT session cookie and returns the OAuth access token.

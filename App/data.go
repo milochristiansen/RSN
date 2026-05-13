@@ -93,7 +93,7 @@ func ArticleAdd(l *sessionlogger.Logger, feed, title, url string, published time
 	}
 }
 
-func FeedListSubs(l *sessionlogger.Logger, feed string) []string {
+func FeedListSubs(l *sessionlogger.Logger, feed string) [][2]string {
 	rows, err := Queries["FeedListSubs"].Preped.Query(feed)
 	if err != nil {
 		l.E.Printf("Feed subscribed user list failed for background update, error: %v\n", err)
@@ -101,17 +101,17 @@ func FeedListSubs(l *sessionlogger.Logger, feed string) []string {
 	}
 	defer rows.Close()
 
-	users := []string{}
+	subs := [][2]string{}
 	for rows.Next() {
-		user := ""
-		err := rows.Scan(&user)
+		var user, name string
+		err := rows.Scan(&user, &name)
 		if err != nil {
 			l.E.Printf("Feed subscribed user list failed for background update, error: %v\n", err)
 			return nil
 		}
-		users = append(users, user)
+		subs = append(subs, [2]string{user, name})
 	}
-	return users
+	return subs
 }
 
 // GET /api/feeds
@@ -288,6 +288,15 @@ func FeedUnsub(l *sessionlogger.Logger, user, feed string) int {
 		return fiber.StatusInternalServerError
 	}
 	return fiber.StatusOK
+}
+
+// FeedDelete is used by the background updater if it finds a feed that somehow has no subs.
+// Should be impossible, but you never know...
+func FeedDelete(l *sessionlogger.Logger, feed string) {
+	_, err := Queries["FeedDelete"].Preped.Exec(feed)
+	if err != nil {
+		l.E.Printf("Failed deleting feed %v, error: %v\n", feed, err)
+	}
 }
 
 // PATCH /api/feeds/:id (pause/unpause/rename)
