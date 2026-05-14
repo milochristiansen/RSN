@@ -178,6 +178,7 @@ func SendTestPushNotification(l *sessionlogger.Logger, userID string) error {
 			VAPIDPublicKey:  VAPIDPublicKey,
 			VAPIDPrivateKey: VAPIDPrivateKey,
 			HTTPClient:      client,
+			TTL:             3600,
 		})
 		if err != nil {
 			if resp != nil && (resp.StatusCode == 410 || resp.StatusCode == 404) {
@@ -228,6 +229,7 @@ func SendPushNotification(l *sessionlogger.Logger, userID string, feeds []*FeedP
 			VAPIDPublicKey:  VAPIDPublicKey,
 			VAPIDPrivateKey: VAPIDPrivateKey,
 			HTTPClient:      client,
+			TTL:             3600,
 		})
 		if err != nil {
 			if resp != nil && (resp.StatusCode == 410 || resp.StatusCode == 404) {

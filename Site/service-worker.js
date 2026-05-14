@@ -9,3 +9,8 @@ self.addEventListener('push', (event) => {
         })
     )
 })
+
+// DO NOT USE THIS WITH CACHING! Push events only.
+self.addEventListener('activate', async () => {
+    self.skipWaiting()
+})
