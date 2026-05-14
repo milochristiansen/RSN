@@ -1,4 +1,5 @@
-import { useState, useCallback, forwardRef, useImperativeHandle } from "preact/hooks"
+import { useState, useCallback, useImperativeHandle } from "preact/hooks"
+import { forwardRef } from "preact/compat"
 import { html } from "/header.js"
 import { Style } from "/components/Style.js"
 
