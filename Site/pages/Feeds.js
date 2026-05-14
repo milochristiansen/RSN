@@ -81,7 +81,13 @@ export const Feeds = (props) => {
 						<${FeedLink} href="/read/feed/${el.ID}" key=${el.ID}>
 							<${FeedLabel}>${el.Name}</${FeedLabel}>
 							<${FeedLabel}>
-								${el.ErrorCode != 200 ? html`<${StatusLabel} class="error"> (error ${el.ErrorCode})</${StatusLabel}>` : ""}
+								${el.ErrorCode != 200 ? (
+									el.ErrorCode > 1000 ? (
+										html`<${StatusLabel} class="error"> (non-HTTP error)</${StatusLabel}>`
+									) : (
+										html`<${StatusLabel} class="error"> (error ${el.ErrorCode})</${StatusLabel}>`
+									)
+								) : ""}
 								${el.Paused ? html`<${StatusLabel} class="pause"> (paused)</${StatusLabel}>` : ""}
 							</${FeedLabel}>
 						</${FeedLink}>
