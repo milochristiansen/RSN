@@ -147,6 +147,52 @@ func PushSubscriptionExists(userID, endpoint string) bool {
 	return exists == 1
 }
 
+// SendTestPushNotification sends a test push notification to all subscriptions for a user.
+func SendTestPushNotification(l *sessionlogger.Logger, userID string) error {
+	subs, err := GetUserPushSubscriptions(userID)
+	if err != nil {
+		return fmt.Errorf("failed to get push subscriptions for user %v: %w", userID, err)
+	}
+
+	if len(subs) == 0 {
+		return fmt.Errorf("no push subscriptions found for user %v", userID)
+	}
+
+	msg := "This is a test push notification from RSN"
+	payload := PushMessage{Ts: time.Now().Unix(), Msg: msg}
+	message, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal push message: %w", err)
+	}
+
+	client := &http.Client{Timeout: 15 * time.Second}
+
+	for _, sub := range subs {
+		resp, err := webpush.SendNotification(message, &webpush.Subscription{
+			Endpoint: sub.Endpoint,
+			Keys: webpush.Keys{
+				P256dh: sub.P256DH,
+				Auth:   sub.Auth,
+			},
+		}, &webpush.Options{
+			VAPIDPublicKey:  VAPIDPublicKey,
+			VAPIDPrivateKey: VAPIDPrivateKey,
+			HTTPClient:      client,
+		})
+		if err != nil {
+			if resp != nil && (resp.StatusCode == 410 || resp.StatusCode == 404) {
+				l.W.Printf("Stale subscription for %v, removing\n", sub.Endpoint)
+				if err := RemovePushSubscription(userID, sub.Endpoint); err != nil {
+					l.E.Printf("Failed to remove stale subscription for %v: %v\n", sub.Endpoint, err)
+				}
+			} else {
+				l.E.Printf("Push notification failed for %v: %v\n", sub.Endpoint, err)
+			}
+		}
+	}
+	return nil
+}
+
 // SendPushNotification sends a push notification to all subscriptions for a user.
 func SendPushNotification(l *sessionlogger.Logger, userID string, feeds []*FeedPushData) error {
 	subs, err := GetUserPushSubscriptions(userID)

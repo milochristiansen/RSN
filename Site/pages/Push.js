@@ -3,7 +3,7 @@ import { html, Meta, Title, Style } from "/header.js"
 
 import { useAuthRedirect } from "/components/AuthRedirectHook.js"
 import { AuthConsumer } from "/components/Auth.js"
-import { subscribePush, clearBackendSubscription } from "/components/Vapid.js"
+import { subscribePush, clearBackendSubscription, sendTestPush } from "/components/Vapid.js"
 
 let Body = Style.section`
 	max-width: 600px;
@@ -51,6 +51,20 @@ export const Push = (props) => {
 			})
 	}
 
+	const handleTestPush = (e) => {
+		e.preventDefault()
+		setMsg({ text: "Sending test notification...", type: "" })
+		sendTestPush()
+			.then(() => {
+				setMsg({ text: "Test notification sent - check your device", type: "" })
+				setTimeout(() => setMsg({ text: "", type: "" }), 5000)
+			})
+			.catch(() => {
+				setMsg({ text: "Failed to send test notification", type: "error" })
+				setTimeout(() => setMsg({ text: "", type: "" }), 3000)
+			})
+	}
+
 	return html`
 		<${Title} text="RSN - Push Notifications" />
 		<${Meta} k="description" v="Manage push notifications settings." />
@@ -71,13 +85,14 @@ export const Push = (props) => {
 						<h2>Push Notifications</h2>
 						${subscribed ? html`
 							<p>You are receiving push notifications on this device.</p>
-							<button onclick=${(e) => handleDisable(e, auth)}>Disable Push Notifications</button>
+							<p><button onclick=${(e) => handleDisable(e, auth)}>Disable Push Notifications</button></p>
+							<p><button onclick=${handleTestPush}>Send Test Notification</button></p>
 						` : html`
 							<p>Enable push notifications to receive updates when new articles are posted.</p>
 							${!pushSupported && html`<p>Push notifications are not supported in your browser. Please use a modern browser that supports the Push API.</p>`}
 							${permission === "not-granted" && html`<p>To allow notifications, click the lock icon in the address bar and change notification settings to Allow.</p>`}
 							${permission === "denied" && html`<p>You previously blocked notifications for this site. To allow notifications, go to your browser settings and find this site in the notification permissions list. Change the setting to Allow.</p>`}
-							<button onclick=${(e) => handleSubscribe(e, auth)}>Enable Push Notifications</button>
+							<p><button onclick=${(e) => handleSubscribe(e, auth)}>Enable Push Notifications</button></p>
 						`}
 						${msg.text !== "" && html`<${Error} class=${msg.type === "error" ? "error" : ""}>${msg.text}${"\u200b"}<//>`}
 					<//>

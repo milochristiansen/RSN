@@ -6,6 +6,7 @@ self.addEventListener('push', (event) => {
             icon: '/assets/round.svg',
             badge: '/assets/favicon.svg',
             timestamp: data.ts,
+            requireInteraction: true,
         })
     )
 })

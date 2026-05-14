@@ -61,3 +61,14 @@ export const clearBackendSubscription = async (uid) => {
 	}
 	return
 }
+
+export const sendTestPush = async () => {
+	let r = await fetch('/api/push/test', {
+		method: 'POST',
+		credentials: 'include'
+	})
+	if (!r.ok) {
+		throw 'Failed to send test push notification'
+	}
+	return
+}

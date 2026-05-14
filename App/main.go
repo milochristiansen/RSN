@@ -315,6 +315,23 @@ func main() {
 		return c.SendStatus(fiber.StatusOK)
 	})
 
+	// POST /api/push/test
+	apiGroup.Post("/push/test", func(c fiber.Ctx) error {
+		l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
+		claims := c.Locals(userKey{}).(*SessionClaims)
+
+		if claims.PushEndpoint == "" {
+			return c.SendStatus(fiber.StatusBadRequest)
+		}
+
+		if err := SendTestPushNotification(l, claims.UID); err != nil {
+			l.E.Printf("Failed to send test push notification for user %v: %v\n", claims.UID, err)
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return c.SendStatus(fiber.StatusOK)
+	})
+
 	if isTestMode() {
 		siteDir := "../Site"
 
