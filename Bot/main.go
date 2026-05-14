@@ -50,6 +50,7 @@ func main() {
 
 	l.I.Println("Creating message handler.")
 	onMsgLogger := sessionlogger.NewSessionLogger("on-msg")
+	l.I.Println("A")
 	client.OnMessage = func(i *IRCMsg) {
 		onMsgLogger.I.Println(i.Raw)
 
@@ -64,6 +65,7 @@ func main() {
 			}
 		}
 	}
+	l.I.Println("B")
 
 	done := make(chan struct{})
 	sig := make(chan os.Signal, 1)
@@ -335,11 +337,10 @@ func main() {
 
 	l.I.Println("Starting HTTP server.")
 	srv := &http.Server{Addr: ":80"}
-	go func() {
-		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-			l.E.Println(err)
-		}
-	}()
+	err = srv.ListenAndServe()
+	if err != http.ErrServerClosed {
+		l.E.Println(err)
+	}
 
 	client.Shutdown()
 	l.I.Println("Shutting down HTTP server...")
