@@ -41,7 +41,7 @@ export const ReadUnreadButton = (props) => {
 	let [buttonstate, setButtonstate] = useState(false)
 	let root = useRef()
 
-	let doclick = useCallback((evnt) => {
+	let doclick = (evnt) => {
 		evnt.preventDefault()
 
 		setButtonstate(state => {
@@ -55,6 +55,7 @@ export const ReadUnreadButton = (props) => {
 							body: JSON.stringify({ read: false })
 						}).then(r => {
 							if (r.ok) {
+								console.log(root.current, root.current.dispatchEvent)
 								root.current.dispatchEvent(OnUnread)
 							}
 						})
@@ -68,6 +69,7 @@ export const ReadUnreadButton = (props) => {
 							body: JSON.stringify({ read: true })
 						}).then(r => {
 							if (r.ok) {
+								console.log(root.current, root.current.dispatchEvent)
 								root.current.dispatchEvent(OnRead)
 							}
 						})
@@ -79,7 +81,7 @@ export const ReadUnreadButton = (props) => {
 			setTimeout(() => setButtonstate(false), 2500);
 			return true
 		})
-	}, [props.state, props.aid])
+	}
 
 	let cls = "off"
 	if (props.state) {
