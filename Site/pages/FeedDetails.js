@@ -119,6 +119,10 @@ let RenameStatus = Style.span`
 	}
 `
 
+const cusomErrorCodes = {
+	1000: "Unspecified non-HTTP error (TLS, etc). Check feed."
+}
+
 export const FeedDetails = (props) => {
 	useAuthRedirect("/")
 	let { route } = useLocation()
@@ -263,7 +267,13 @@ export const FeedDetails = (props) => {
 					return html`
 						<${DetailRow}><h2>${data.Name} ${data.Paused && html`<span>(paused)</span>`}</h2></${DetailRow}>
 						<${DetailRow}><a target="_blank" rel="noreferrer" href=${data.URL} native>${data.URL}</a></${DetailRow}>
-						${data.ErrorCode != 200 ? html`<${DetailError}>Feed currently down, code ${data.ErrorCode}</${DetailError}>` : ""}
+						${data.ErrorCode != 200 ? (
+							data.ErrorCode >= 1000 ? (
+								html`<${DetailError}>Feed currently down, code ${data.ErrorCode}</${DetailError}>`
+							) : (
+								html`<${DetailError}>${cusomErrorCodes[data.ErrorCode]}</${DetailError}>`
+							)
+						) : ""}
 						${isrr() && html`<${DetailRow}><a target="_blank" rel="noreferrer" href=${isrr()} native>Go to Fiction Page on Royal Road</a></${DetailRow}>`}
 						<${ButtonGroup}>
 							${data.Paused ?

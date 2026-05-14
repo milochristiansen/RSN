@@ -256,7 +256,7 @@ var Queries = map[string]*queryHolder{
 
 func init() {
 	var err error
-	DB, err = sql.Open("sqlite", "file:feeds.db?_foreign_keys=true")
+	DB, err = sql.Open("sqlite", "file:feeds.db?_foreign_keys=true&_busy_timeout=5000")
 	if err != nil {
 		panic(err)
 	}

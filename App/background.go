@@ -60,6 +60,8 @@ func Background() {
 				hterr := &gofeed.HTTPError{}
 				if errors.As(err, hterr) {
 					UpdateFeedErrorState(l, feed, hterr.StatusCode)
+				} else {
+					UpdateFeedErrorState(l, feed, 1000)
 				}
 				continue
 			}
