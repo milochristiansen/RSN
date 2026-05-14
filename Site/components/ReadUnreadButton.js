@@ -55,8 +55,7 @@ export const ReadUnreadButton = (props) => {
 							body: JSON.stringify({ read: false })
 						}).then(r => {
 							if (r.ok) {
-								console.log(root.current, root.current.dispatchEvent)
-								root.current.dispatchEvent(OnUnread)
+								root.current.base.dispatchEvent(OnUnread)
 							}
 						})
 					}
@@ -69,8 +68,7 @@ export const ReadUnreadButton = (props) => {
 							body: JSON.stringify({ read: true })
 						}).then(r => {
 							if (r.ok) {
-								console.log(root.current, root.current.dispatchEvent)
-								root.current.dispatchEvent(OnRead)
+								root.current.base.dispatchEvent(OnRead)
 							}
 						})
 					}
