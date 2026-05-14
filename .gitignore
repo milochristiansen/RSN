@@ -16,6 +16,7 @@ token-*.json
 
 # Data files
 *.sql
+*.db
 
 # Test server files
 Site/api/
