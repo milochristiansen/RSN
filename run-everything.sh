@@ -8,7 +8,7 @@ touch feeds.db
 
 # Start the app server if it exists (nop if already running), otherwise create it
 docker start rsn-app || docker run -d \
-	-v $PWD/feeds.db:/app/feeds.db \
+	-v $PWD/feeds.db:/App/feeds.db \
 	--restart unless-stopped \
 	--network common \
 	--name rsn-app \
@@ -16,8 +16,8 @@ docker start rsn-app || docker run -d \
 
 # Then the twitch bot
 docker start twitch-bot || docker run -d \
-	-v $PWD/Bot/token-master.json:/app/token-master.json \
-	-v $PWD/Bot/token-bot.json:/app/token-bot.json \
+	-v $PWD/Bot/token-master.json:/Bot/token-master.json \
+	-v $PWD/Bot/token-bot.json:/Bot/token-bot.json \
 	--restart unless-stopped \
 	--network common \
 	--name twitch-bot \
