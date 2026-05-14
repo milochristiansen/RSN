@@ -42,7 +42,7 @@ export let Notification = forwardRef(function Notification(props, ref) {
 	let display = data.Type == undefined ? "none" : "block"
 
 	return html`
-		<${NotifContainer} style=${display}>
+		<${NotifContainer} style="display: ${display};">
 			<${NotifInner}>
 				${(() => {
 					if (data.Type == undefined) {
