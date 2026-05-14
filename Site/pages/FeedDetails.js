@@ -268,7 +268,7 @@ export const FeedDetails = (props) => {
 						<${DetailRow}><h2>${data.Name} ${data.Paused && html`<span>(paused)</span>`}</h2></${DetailRow}>
 						<${DetailRow}><a target="_blank" rel="noreferrer" href=${data.URL} native>${data.URL}</a></${DetailRow}>
 						${data.ErrorCode != 200 ? (
-							data.ErrorCode >= 1000 ? (
+							data.ErrorCode < 1000 ? (
 								html`<${DetailError}>Feed currently down, code ${data.ErrorCode}</${DetailError}>`
 							) : (
 								html`<${DetailError}>${cusomErrorCodes[data.ErrorCode]}</${DetailError}>`
