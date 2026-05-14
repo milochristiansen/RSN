@@ -4,10 +4,6 @@
 App/server
 Bot/twitchbot
 
-# Sublime stuff
-*.sublime-workspace
-*.sublime-project
-
 # Key files
 *.keys
 keys.go
@@ -18,6 +14,5 @@ token-*.json
 *.sql
 *.db
 
-# Test server files
-Site/api/
-Site/auth/
+# Other
+.opencode
