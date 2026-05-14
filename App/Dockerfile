@@ -1,9 +1,7 @@
 
-FROM golang:1.20-alpine3.17 AS build-go
+FROM golang:1.26-alpine3.22 AS build-go
 
-WORKDIR /app
-
-RUN apk add --no-cache build-base
+WORKDIR /App
 
 COPY . .
 
@@ -11,10 +9,10 @@ RUN go build -o server.bin
 
 ########################################################################################################################
 
-FROM alpine:3.17
+FROM alpine:3.22
 
-WORKDIR /app
+WORKDIR /App
 
-COPY --from=build-go /app/server.bin .
+COPY --from=build-go /App/server.bin .
 
-ENTRYPOINT ["/app/server.bin"]
+ENTRYPOINT ["/App/server.bin"]
