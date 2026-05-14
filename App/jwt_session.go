@@ -205,7 +205,7 @@ func setLoginCookie(c fiber.Ctx, returnUrl string) (string, error) {
 		Value:    string(encrypted),
 		HTTPOnly: true,
 		Secure:   true,
-		SameSite: "Strict",
+		SameSite: "Lax", // This needs to be Lax so the redirect URL handler can see the cookie.
 		Path:     "/",
 		Expires:  time.Now().Add(loginExpiry),
 	})
@@ -244,7 +244,7 @@ func getLoginStateFromCookie(c fiber.Ctx) (string, string, error) {
 		Value:    "",
 		HTTPOnly: true,
 		Secure:   true,
-		SameSite: "Strict",
+		SameSite: "Lax",
 		Path:     "/",
 		Expires:  time.Now().Add(-1 * time.Hour),
 	})

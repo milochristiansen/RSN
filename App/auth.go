@@ -346,7 +346,7 @@ func init() {
 func GoogleRedirectEndpoint(c fiber.Ctx) error {
 	l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
 
-	// Validate the nonce
+	// Validate the state value
 	state, returnUrl, err := getLoginStateFromCookie(c)
 	if err != nil {
 		l.W.Printf("Error loading state from login cookie: %v\n", err)
