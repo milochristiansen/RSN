@@ -41,9 +41,9 @@ export let Notification = forwardRef(function Notification(props, ref) {
 	let display = data.Type == undefined ? "none" : "block"
 
 	return html`
-		<${NotifContainer} style=${{display}}>
+		<${NotifContainer} style=${display}>
 			<${NotifInner}>
-				${() => {
+				${(() => {
 					if (data.Type == undefined) {
 						return ""
 					}
@@ -90,7 +90,7 @@ export let Notification = forwardRef(function Notification(props, ref) {
 							<${NotifText}>for raiding with ${d.Viewers} viewers!</${NotifText}>
 						`
 					}
-				}()}
+				})()}
 			<//>
 		<//>
 	`
