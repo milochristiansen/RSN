@@ -82,10 +82,10 @@ export const Feeds = (props) => {
 							<${FeedLabel}>${el.Name}</${FeedLabel}>
 							<${FeedLabel}>
 								${el.ErrorCode != 200 ? (
-									el.ErrorCode > 1000 ? (
-										html`<${StatusLabel} class="error"> (non-HTTP error)</${StatusLabel}>`
-									) : (
+									el.ErrorCode < 1000 ? (
 										html`<${StatusLabel} class="error"> (error ${el.ErrorCode})</${StatusLabel}>`
+									) : (
+										html`<${StatusLabel} class="error"> (non-HTTP error)</${StatusLabel}>`
 									)
 								) : ""}
 								${el.Paused ? html`<${StatusLabel} class="pause"> (paused)</${StatusLabel}>` : ""}
