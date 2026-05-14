@@ -181,6 +181,7 @@ export const FeedDetails = (props) => {
 		fetch("/api/feeds/"+props.id, {
 			method: 'PATCH',
 			credentials: 'include',
+			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ paused: shouldPause })
 		}).then(r => {
 			if (r.ok) {
@@ -218,6 +219,7 @@ export const FeedDetails = (props) => {
 		fetch("/api/feeds/"+props.id, {
 			method: 'PATCH',
 			credentials: 'include',
+			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ name: renameValue })
 		}).then(r => {
 			if (r.ok) {

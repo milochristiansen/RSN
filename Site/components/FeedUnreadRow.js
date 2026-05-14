@@ -68,7 +68,12 @@ export const FeedUnreadRow = (props) => {
 
 	let openArticle = useCallback((evnt, id) => {
 		setRead(state => ({...state, [id]: true}))
-		fetch(`/api/articles/${id}`, { method: 'PATCH', credentials: 'include', body: JSON.stringify({ read: true }) }).then(r => {
+		fetch(`/api/articles/${id}`, {
+			method: 'PATCH',
+			credentials: 'include',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ read: true })
+		}).then(r => {
 			if (!r.ok) {
 				setRead(state => ({...state, [id]: false}))
 			}

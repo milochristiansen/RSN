@@ -48,7 +48,12 @@ export const ReadUnreadButton = (props) => {
 			if (state) {
 				if (props.state) {
 					if (props.aid != undefined) {
-						fetch("/api/articles/" + props.aid, { method: 'PATCH', credentials: 'include', body: JSON.stringify({ read: false }) }).then(r => {
+						fetch("/api/articles/" + props.aid, {
+							method: 'PATCH',
+							credentials: 'include',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ read: false })
+						}).then(r => {
 							if (r.ok) {
 								root.current.dispatchEvent(OnUnread)
 							}
@@ -56,7 +61,12 @@ export const ReadUnreadButton = (props) => {
 					}
 				} else {
 					if (props.aid != undefined) {
-						fetch("/api/articles/" + props.aid, { method: 'PATCH', credentials: 'include', body: JSON.stringify({ read: true }) }).then(r => {
+						fetch("/api/articles/" + props.aid, {
+							method: 'PATCH',
+							credentials: 'include',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ read: true })
+						}).then(r => {
 							if (r.ok) {
 								root.current.dispatchEvent(OnRead)
 							}
@@ -80,7 +90,7 @@ export const ReadUnreadButton = (props) => {
 	}
 
 	return html`
-		<${BtnContainer} ref=${root} href="/toggle-read" class=${cls} onclick=${(e) => doclick(e)} native><${Checkmark}><//><//>
+		<${BtnContainer} ref=${root} href="/toggle-read" class=${cls} onclick=${(e) => doclick(e)} target="_top"><${Checkmark}><//><//>
 	`
 }
 
