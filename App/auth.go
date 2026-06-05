@@ -168,19 +168,18 @@ func AuthMiddleware() fiber.Handler {
 			return c.SendStatus(fiber.StatusForbidden)
 		}
 
-		// Fetch/refresh user info using TokenSource
-		source := AuthData.Config.TokenSource(AuthData.Context, &oauthToken)
-		user, err := AuthData.Provider.UserInfo(AuthData.Context, source)
+		// Refresh the OAuth2 token (this also validates the refresh token is still good)
+		refreshedToken, err := AuthData.Config.TokenSource(AuthData.Context, &oauthToken).Token()
 		if err != nil {
-			l.W.Printf("Error fetching user info: %v\n", err)
-			return c.SendStatus(fiber.StatusInternalServerError)
+			l.W.Printf("Error refreshing OAuth token: %v\n", err)
+			return c.SendStatus(fiber.StatusForbidden)
 		}
 
-		// Get refreshed token
-		refreshedToken, err := source.Token()
+		// Fetch user info to verify the token is valid
+		user, err := AuthData.Provider.UserInfo(AuthData.Context, oauth2.StaticTokenSource(refreshedToken))
 		if err != nil {
-			l.W.Printf("Error getting current token for restorage: %v\n", err)
-			return c.SendStatus(fiber.StatusInternalServerError)
+			l.W.Printf("Error fetching user info: %v\n", err)
+			return c.SendStatus(fiber.StatusForbidden)
 		}
 
 		// Update session with refreshed token
@@ -228,7 +227,7 @@ func GoogleLoginEndpoint(c fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	return c.Redirect().To(AuthData.Config.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.ApprovalForce))
+	return c.Redirect().To(AuthData.Config.AuthCodeURL(state, oauth2.AccessTypeOffline))
 }
 
 // LogoutEndpoint will revoke the google OAuth token and delete the user's session cookie.

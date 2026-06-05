@@ -43,7 +43,7 @@ const loginCookieName = "rsn-login"
 
 // Expiration duration constants:
 const loginExpiry = 5 * time.Minute
-const sessionExpiry = 12 * time.Hour
+const sessionExpiry = 7 * 24 * time.Hour
 
 // SessionClaims holds the decrypted session data stored inside the JWT.
 type SessionClaims struct {
