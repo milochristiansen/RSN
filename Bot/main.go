@@ -34,6 +34,8 @@ const (
 
 var ErrDuplicateMessage = errors.New("Duplicate Message Suppressed")
 
+var lastChatEvent time.Time
+
 func main() {
 	l := sessionlogger.NewMasterLogger()
 
@@ -61,6 +63,14 @@ func main() {
 				client.Say(Channel, "My Steam URL: https://steamcommunity.com/id/MiloChristiansen/")
 			case "!bot":
 				client.Say(Channel, "Yes, I'm the bot. Yes, I'm custom. Yes, I'm probably buggy as hell.")
+			default:
+				// Chat activity event — trailing-edge debounce.
+				// Sends immediately on first activity, then suppresses until chat goes quiet for 30 seconds.
+				now := time.Now()
+				if now.Sub(lastChatEvent) > 30*time.Second {
+					SendEventMsg("chat", map[string]any{})
+				}
+				lastChatEvent = now
 			}
 		}
 	}

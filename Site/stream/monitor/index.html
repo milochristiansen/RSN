@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+
+		<title>SSE Monitor</title>
+
+		<script type="importmap">
+		{"imports": {
+			"htm": "https://unpkg.com/htm@3.0.4/dist/htm.module.js?module",
+			"csz": "https://unpkg.com/csz@1.2.0/index.js?module",
+
+			"preact": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module",
+			"preact/compat": "https://unpkg.com/preact@10.8.2/compat/dist/compat.mjs",
+			"preact/hooks": "https://unpkg.com/preact@10.8.2/hooks/dist/hooks.mjs",
+			"preact/debug": "https://unpkg.com/preact@10.8.2/debug/dist/debug.mjs",
+			"preact/devtools": "https://unpkg.com/preact@10.8.2/devtools/dist/devtools.mjs",
+
+			"https://unpkg.com/preact@%3E=10/hooks?module": "https://unpkg.com/preact@10.8.2/hooks/dist/hooks.mjs",
+			"https://unpkg.com/preact@latest?module": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module",
+			"https://unpkg.com/preact@%3E=10?module": "https://unpkg.com/preact@10.8.2/dist/preact.module.js?module"
+		}}
+		</script>
+	</head>
+	<body>
+		<script type="module">
+		import { html, render } from "/header.js"
+		import { useState, useEffect, useRef } from "preact/hooks"
+		import css from "csz"
+
+		const eventTypes = ["sub", "gift", "bits", "follow", "raid", "points", "chat"]
+		const typeColors = {
+			sub: "#22bb22",
+			follow: "#5599ff",
+			raid: "#f56329",
+			bits: "#bb55ff",
+			gift: "#ffcc00",
+			points: "#22dddd",
+			chat: "#999999",
+		}
+
+		const container = css`
+			background: #161625;
+			color: #e1e1ff;
+			font-family: monospace;
+			font-size: 14px;
+			height: 100vh;
+			width: 100vw;
+			overflow-y: auto;
+			padding: 8px;
+			margin: 0;
+			box-sizing: border-box;
+		`
+
+		const entry = css`
+			margin: 0;
+			padding: 1px 0;
+			line-height: 1.4;
+			white-space: pre-wrap;
+			word-break: break-all;
+		`
+
+		const timeStyle = css`
+			color: #818cab;
+		`
+
+		const MAX_ENTRIES = 200
+
+		const Monitor = () => {
+			const [entries, setEntries] = useState([])
+			const logRef = useRef(null)
+
+			useEffect(() => {
+				const evtSource = new EventSource("https://httpscolonslashslashwww.com/twitch/sse")
+
+				const addEntry = (type, data) => {
+					const time = new Date().toLocaleTimeString()
+					setEntries(prev => {
+						const next = [...prev, { time, type, data }]
+						if (next.length > MAX_ENTRIES) next.shift()
+						return next
+					})
+				}
+
+				for (const type of eventTypes) {
+					evtSource.addEventListener(type, (e) => {
+						if (type === "chat") {
+							new Audio("/stream/assets/ping.mp3").play()
+						}
+						addEntry(type.toUpperCase(), e.data)
+					})
+				}
+
+				evtSource.onerror = () => {
+					addEntry("ERROR", "SSE connection error")
+				}
+
+				return () => evtSource.close()
+			}, [])
+
+			useEffect(() => {
+				if (logRef.current) {
+					logRef.current.scrollTop = logRef.current.scrollHeight
+				}
+			}, [entries])
+
+			return html`
+				<div class=${container} ref=${logRef}>
+					${entries.map((e, i) => html`
+						<div class=${entry} key=${i}>
+							<span class=${timeStyle}>[${e.time}]</span>
+							<span style=${{ color: typeColors[e.type.toLowerCase()] || "#ffffff" }}> ${e.type} </span>
+							<span>${e.data}</span>
+						</div>
+					`)}
+				</div>
+			`
+		}
+
+		css`
+			:global(html), :global(body) {
+				margin: 0;
+				padding: 0;
+				background: #161625;
+			}
+		`
+
+		render(html`<${Monitor}/>`, document.body)
+		</script>
+	</body>
+</html>
