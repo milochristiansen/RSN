@@ -177,6 +177,7 @@ func SendTestPushNotification(l *sessionlogger.Logger, userID string) error {
 		}, &webpush.Options{
 			VAPIDPublicKey:  VAPIDPublicKey,
 			VAPIDPrivateKey: VAPIDPrivateKey,
+			Subscriber: "mailto:milo@httpscolonslashslashwww.com",
 			HTTPClient:      client,
 			TTL:             3600,
 		})
