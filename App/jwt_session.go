@@ -25,7 +25,6 @@ package main
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -33,8 +32,6 @@ import (
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwe"
 	"github.com/lestrrat-go/jwx/v2/jwt"
-	"github.com/milochristiansen/sessionlogger"
-	"golang.org/x/oauth2"
 )
 
 // Cookie name constants:
@@ -134,41 +131,6 @@ func UpdateSessionPushEndpoint(c fiber.Ctx, endpoint string) error {
 	claims.PushEndpoint = endpoint
 
 	return setSessionCookie(c, claims)
-}
-
-// extractAccessToken decrypts the JWT session cookie and returns the OAuth access token.
-func extractAccessToken(l *sessionlogger.Logger, c fiber.Ctx) string {
-	jwtToken := c.Cookies(sessionCookieName)
-	if jwtToken == "" {
-		l.W.Printf("Session JWT is empty.\n")
-		return ""
-	}
-
-	decrypted, err := jwe.Decrypt([]byte(jwtToken), jwe.WithKey(jwa.A256KW, jwtEncKey))
-	if err != nil {
-		l.W.Printf("Failed to decrypt session cookie: %v\n", err)
-		return ""
-	}
-
-	token, err := jwt.Parse(decrypted, jwt.WithKey(jwa.HS256, jwtSignKey), jwt.WithValidate(true))
-	if err != nil {
-		l.W.Printf("Failed to verify session token: %v\n", err)
-		return ""
-	}
-
-	tokenStr := getStringClaim(token, "token")
-	if tokenStr == "" {
-		l.W.Printf("Session JWT stored token is empty.\n")
-		return ""
-	}
-
-	var oauthToken oauth2.Token
-	if err := json.Unmarshal([]byte(tokenStr), &oauthToken); err != nil {
-		l.W.Printf("Failed to parse stored token: %v\n", err)
-		return ""
-	}
-
-	return oauthToken.AccessToken
 }
 
 // generateLoginState generates a random 16-character hex state string.

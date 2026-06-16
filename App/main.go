@@ -52,14 +52,14 @@ func main() {
 	authGroup := app.Group("/auth", LoggerMiddleware())
 	authGroup.Get("/login/google", GoogleLoginEndpoint)
 	authGroup.Get("/redirect/google", GoogleRedirectEndpoint)
-	authGroup.Get("/logout", LogoutEndpoint)
 
 	// Special fake login URL for testing. In testing mode any user that hits a login url is redirected here.
 	if isTestMode() {
 		authGroup.Get("/login/mock", MockLoginEndpoint)
 	}
 
-	// /auth/whoami is special, as it is an authenticated route in an otherwise unauthenticated group.
+	// /auth/whoami and /auth/logout are special, as they are authenticated routes in an otherwise unauthenticated group.
+	authGroup.Get("/logout", AuthMiddleware(), LogoutEndpoint)
 	authGroup.Get("/whoami", AuthMiddleware(), func(c fiber.Ctx) error {
 		claims := c.Locals(userKey{}).(*SessionClaims)
 

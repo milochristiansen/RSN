@@ -227,22 +227,30 @@ func GoogleLoginEndpoint(c fiber.Ctx) error {
 		return c.SendStatus(fiber.StatusInternalServerError)
 	}
 
-	return c.Redirect().To(AuthData.Config.AuthCodeURL(state, oauth2.AccessTypeOffline))
+	return c.Redirect().To(AuthData.Config.AuthCodeURL(state, oauth2.AccessTypeOffline, oauth2.SetAuthURLParam("prompt", "consent")))
 }
 
 // LogoutEndpoint will revoke the google OAuth token and delete the user's session cookie.
 func LogoutEndpoint(c fiber.Ctx) error {
 	l := c.Locals(loggerKey{}).(*sessionlogger.Logger)
+	claims := c.Locals(userKey{}).(*SessionClaims)
 
 	returnUrl := c.Query("r")
 
 	// Revoke Google OAuth token.
 	if !isTestMode() {
-		if accessToken := extractAccessToken(l, c); accessToken != "" {
+		var oauthToken oauth2.Token
+		err := json.Unmarshal([]byte(claims.Token), &oauthToken)
+		if err != nil {
+			l.W.Printf("Error parsing OAuth token: %v\n", err)
+			return c.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		if oauthToken.AccessToken != "" {
 			vals := url.Values{
-				"token": []string{accessToken},
+				"token": []string{oauthToken.AccessToken},
 			}
-			_, err := http.DefaultClient.Do(&http.Request{
+			resp, err := http.DefaultClient.Do(&http.Request{
 				Method: "POST",
 				Header: map[string][]string{
 					"Content-Type": {"application/x-www-form-urlencoded"},
@@ -258,12 +266,12 @@ func LogoutEndpoint(c fiber.Ctx) error {
 				l.W.Printf("Error revoking OAuth token: %v\n", err)
 				return c.SendStatus(fiber.StatusInternalServerError)
 			}
+			resp.Body.Close()
 		}
 	}
 
 	// Remove push subscription if one exists.
-	claims := c.Locals(userKey{}).(*SessionClaims)
-	if claims != nil && claims.UID != "" && claims.PushEndpoint != "" {
+	if claims.UID != "" && claims.PushEndpoint != "" {
 		RemovePushSubscription(claims.UID, claims.PushEndpoint)
 	}
 
