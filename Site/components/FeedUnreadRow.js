@@ -83,7 +83,7 @@ export const FeedUnreadRow = (props) => {
 	return html`
 		<${FeedRow}>
 			<${FeedName}><${FeedLink} href=${`/read/feed/${props.data.FeedID}`}>${props.data.FeedName}</${FeedLink}></${FeedName}>
-			${props.data.Articles.map(item => item === null ? html`<${LoadingDots}><//>` : html`
+		${props.data.Articles.map(item => item === null ? html`<${LoadingDots}>\u00B7\u00B7\u00B7<//>` : html`
 				<${ArticleItem}
 					key=${item.ID}
 					onread=${() => setRead(state => ({...state, [item.ID]: true}))}
