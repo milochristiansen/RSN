@@ -5,14 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
-
-	"fmt"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -27,9 +26,9 @@ import (
 )
 
 const (
-	Channel = "#milochristiansen"
+	Channel   = "#milochristiansen"
 	ChannelID = "216915573"
-	BotName = "mechanicalmilo"
+	BotName   = "mechanicalmilo"
 )
 
 var ErrDuplicateMessage = errors.New("Duplicate Message Suppressed")
@@ -40,7 +39,7 @@ func main() {
 	l := sessionlogger.NewMasterLogger()
 
 	l.I.Println("Bot starting...")
-	
+
 	db, err := buntdb.Open(":memory:")
 	if err != nil {
 		l.E.Println(err)
@@ -50,28 +49,58 @@ func main() {
 
 	client := new(IRC)
 
+	l.I.Println("Creating AI layer.")
+	aiLogger := sessionlogger.NewSessionLogger("ai")
+	ai, err := NewAI(defaultAIConfig(), aiLogger, func(text string) error {
+		return client.Say(Channel, text)
+	})
+	if err != nil {
+		l.E.Println("AI setup error:", err)
+		os.Exit(1)
+	}
+	defer ai.Close()
+
 	l.I.Println("Creating message handler.")
 	onMsgLogger := sessionlogger.NewSessionLogger("on-msg")
 	client.OnMessage = func(i *IRCMsg) {
 		onMsgLogger.I.Println(i.Raw)
 
-		if i.Command == "PRIVMSG" {
-			switch i.Params[len(i.Params)-1] {
-			case "!discord":
-				client.Say(Channel, "Get in the Discord for memes, alerts, and random BS: https://discord.gg/ayrXgwNTJR")
-			case "!steam":
-				client.Say(Channel, "My Steam URL: https://steamcommunity.com/id/MiloChristiansen/")
-			case "!bot":
-				client.Say(Channel, "Yes, I'm the bot. Yes, I'm custom. Yes, I'm probably buggy as hell.")
-			default:
-				// Chat activity event — trailing-edge debounce.
-				// Sends immediately on first activity, then suppresses until chat goes quiet for 30 seconds.
-				now := time.Now()
-				if now.Sub(lastChatEvent) > 30*time.Second {
-					SendEventMsg("chat", map[string]any{})
-				}
-				lastChatEvent = now
+		if i.Command != "PRIVMSG" {
+			return
+		}
+		if len(i.Params) < 2 {
+			return
+		}
+		text := i.Params[len(i.Params)-1]
+		switch {
+		case text == "!discord":
+			if err := client.Say(Channel, "Get in the Discord for memes, alerts, and random BS: https://discord.gg/ayrXgwNTJR"); err != nil {
+				l.E.Println("say !discord:", err)
 			}
+		case text == "!steam":
+			if err := client.Say(Channel, "My Steam URL: https://steamcommunity.com/id/MiloChristiansen/"); err != nil {
+				l.E.Println("say !steam:", err)
+			}
+		case text == "!bot":
+			if err := client.Say(Channel, "Yes, I'm the bot. Yes, I'm custom. Yes, I'm probably buggy as hell."); err != nil {
+				l.E.Println("say !bot:", err)
+			}
+		case isAICommand(text):
+			ai.HandleCommand(i)
+		default:
+			// Queue AI work before the SSE event so a slow subscriber cannot
+			// delay the AI path.
+			ai.Consider(i)
+
+			// Chat activity event — trailing-edge debounce.
+			// Sends immediately on first activity, then suppresses until chat goes quiet for 30 seconds.
+			now := time.Now()
+			if now.Sub(lastChatEvent) > 30*time.Second {
+				if err := SendEventMsg("chat", map[string]any{}); err != nil {
+					l.E.Println("chat event error:", err)
+				}
+			}
+			lastChatEvent = now
 		}
 	}
 
@@ -85,7 +114,7 @@ func main() {
 	}()
 
 	l.I.Println("Starting timer loop.")
-	go func(){
+	go func() {
 		l := sessionlogger.NewSessionLogger("timer-loop")
 		lastPlug := time.Now().Add(-(time.Minute * 30))
 		ticker := time.NewTicker(time.Minute)
@@ -149,14 +178,14 @@ func main() {
 
 	var desiredSubs = map[string]any{
 		"channel.channel_points_custom_reward_redemption.add": esb.ConditionChannelPointsRewardRedemptionAdd{BroadcasterUserID: ChannelID},
-		"channel.cheer": esb.ConditionChannelCheer{BroadcasterUserID: ChannelID},
-		"channel.follow": map[string]any{"broadcaster_user_id": ChannelID, "moderator_user_id": ChannelID},
-		"channel.raid": esb.ConditionChannelRaid{ToBroadcasterUserID: ChannelID},
-		"channel.subscribe": esb.ConditionChannelSubscribe{BroadcasterUserID: ChannelID},
-		"channel.subscription.gift": esb.ConditionChannelSubscriptionGift{BroadcasterUserID: ChannelID},
+		"channel.cheer":                esb.ConditionChannelCheer{BroadcasterUserID: ChannelID},
+		"channel.follow":               map[string]any{"broadcaster_user_id": ChannelID, "moderator_user_id": ChannelID},
+		"channel.raid":                 esb.ConditionChannelRaid{ToBroadcasterUserID: ChannelID},
+		"channel.subscribe":            esb.ConditionChannelSubscribe{BroadcasterUserID: ChannelID},
+		"channel.subscription.gift":    esb.ConditionChannelSubscriptionGift{BroadcasterUserID: ChannelID},
 		"channel.subscription.message": esb.ConditionChannelSubscriptionMessage{BroadcasterUserID: ChannelID},
-		"stream.offline": esb.ConditionStreamOffline{BroadcasterUserID: ChannelID},
-		"stream.online": esb.ConditionStreamOnline{BroadcasterUserID: ChannelID},
+		"stream.offline":               esb.ConditionStreamOffline{BroadcasterUserID: ChannelID},
+		"stream.online":                esb.ConditionStreamOnline{BroadcasterUserID: ChannelID},
 	}
 	// If nothing is listed, uses "1"
 	var subVersions = map[string]string{
@@ -196,11 +225,11 @@ func main() {
 			// We want it and we don't have it
 			l.I.Printf("Subscribing to %v event.\n", sub)
 			_, err := esclient.Subscribe(context.Background(), &esf.SubRequest{
-				Type: sub,
-				Secret: EventSubSecret,
-				Callback: "https://httpscolonslashslashwww.com/twitch/webhook",
+				Type:      sub,
+				Secret:    EventSubSecret,
+				Callback:  "https://httpscolonslashslashwww.com/twitch/webhook",
 				Condition: cond,
-				Version: subVersions[sub],
+				Version:   subVersions[sub],
 			})
 			if err != nil {
 				l.E.Println("EventSub Subscribe Error:", err)
@@ -350,6 +379,7 @@ func main() {
 		l.E.Println(err)
 	}
 
+	ai.Close()
 	client.Shutdown()
 	l.I.Println("Shutting down HTTP server...")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -363,10 +393,10 @@ func main() {
 // =====================================================================================================================
 
 var Broker = struct {
-	Messages chan []byte // Incoming events to send to clients
-	NewClients chan chan []byte // New client connections
-	ClosingClients chan chan []byte // Closed client connections
-	clients map[chan []byte]bool // Client connections registry
+	Messages       chan []byte          // Incoming events to send to clients
+	NewClients     chan chan []byte     // New client connections
+	ClosingClients chan chan []byte     // Closed client connections
+	clients        map[chan []byte]bool // Client connections registry
 }{
 	Messages:       make(chan []byte, 10), // May need to grow if traffic increases
 	NewClients:     make(chan chan []byte),
@@ -392,16 +422,16 @@ func init() {
 		timeout := time.NewTicker(dur)
 		for {
 			select {
-			case msg := <- Broker.Messages:
+			case msg := <-Broker.Messages:
 				// New message, send to all clients.
 				for client := range Broker.clients {
 					client <- msg
 				}
 				timeout.Reset(dur)
-			case client := <- Broker.NewClients:
+			case client := <-Broker.NewClients:
 				Broker.clients[client] = true
 				timeout.Reset(dur)
-			case client := <- Broker.ClosingClients:
+			case client := <-Broker.ClosingClients:
 				delete(Broker.clients, client)
 				timeout.Reset(dur)
 			case <-timeout.C:
@@ -424,7 +454,7 @@ func SSEHandler(w http.ResponseWriter, r *http.Request) {
 
 	messages := make(chan []byte, 1)
 	Broker.NewClients <- messages
-	defer func(){
+	defer func() {
 		l.I.Println("Closing event send loop.")
 		Broker.ClosingClients <- messages
 	}()
@@ -453,10 +483,10 @@ func SSEHandler(w http.ResponseWriter, r *http.Request) {
 // Auth
 // =====================================================================================================================
 
-var AuthData = &struct{
+var AuthData = &struct {
 	sync.Mutex
-	Config   oauth2.Config
-	Context  context.Context
+	Config  oauth2.Config
+	Context context.Context
 }{
 	Context: context.Background(),
 	Config: oauth2.Config{
@@ -470,7 +500,7 @@ var AuthData = &struct{
 var AppToken = (&clientcredentials.Config{
 	ClientID:     ClientID,
 	ClientSecret: ClientSecret,
-	TokenURL: twitch.Endpoint.TokenURL,
+	TokenURL:     twitch.Endpoint.TokenURL,
 }).TokenSource(context.Background())
 
 // Three tokens:
@@ -512,4 +542,3 @@ func getToken(path string) (string, error) {
 	os.WriteFile(path, tokenB, 0600)
 	return token.AccessToken, nil
 }
-
