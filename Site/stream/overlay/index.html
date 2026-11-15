@@ -28,7 +28,9 @@
 		import { html, render } from "/header.js"
 		import { createRef } from "preact"
 		import css from "csz"
+		import { createTts } from "/stream/overlay/tts.js"
 
+		const tts = createTts({ voice: 0, speed: 1.0 })
 		const evtSource = new EventSource("https://httpscolonslashslashwww.com/twitch/sse");
 		var eventQueue = []
 		var currentlyShowing = null
@@ -107,16 +109,7 @@
 				snd.play();
 				break;
 			case "TTS Message":
-				fetch(`/twitch/tts`, {
-					method: "POST",
-					body: data.Input,
-				})
-					.then(res => res.blob())
-					.then(blob => {
-						snd = new Audio(URL.createObjectURL(blob));
-						snd.volume = 0.8
-						snd.play();
-					});
+				tts.enqueue(data.Input)
 				break;
 			}
 		})
