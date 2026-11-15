@@ -250,3 +250,28 @@ func TestPromptsAreStatic(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildReplyUserPrompt(t *testing.T) {
+	transcript := "[20:50] carol: mechanicalmilo what's a vod?"
+	if got := buildReplyUserPrompt(StreamInfo{}, transcript); got != transcript {
+		t.Fatalf("empty info = %q, want transcript only", got)
+	}
+
+	got := buildReplyUserPrompt(StreamInfo{Category: "Turing Complete", Title: "building a CPU"}, transcript)
+	want := "Stream information:\n- category: Turing Complete\n- title: building a CPU\n\n" + transcript
+	if got != want {
+		t.Fatalf("prompt = %q, want %q", got, want)
+	}
+
+	got = buildReplyUserPrompt(StreamInfo{Category: "Turing Complete"}, transcript)
+	want = "Stream information:\n- category: Turing Complete\n\n" + transcript
+	if got != want {
+		t.Fatalf("category-only prompt = %q, want %q", got, want)
+	}
+}
+
+func TestCleanStreamText(t *testing.T) {
+	if got := cleanStreamText("  building\n a   CPU  "); got != "building a CPU" {
+		t.Fatalf("cleanStreamText = %q", got)
+	}
+}

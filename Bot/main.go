@@ -60,6 +60,17 @@ func main() {
 	}
 	defer ai.Close()
 
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		info, err := fetchChannelInfo(ctx)
+		if err != nil {
+			l.E.Println("channel info:", err)
+			return
+		}
+		ai.SetStreamInfo(info.Title, info.Category)
+	}()
+
 	l.I.Println("Creating message handler.")
 	onMsgLogger := sessionlogger.NewSessionLogger("on-msg")
 	client.OnMessage = func(i *IRCMsg) {
@@ -184,12 +195,14 @@ func main() {
 		"channel.subscribe":            esb.ConditionChannelSubscribe{BroadcasterUserID: ChannelID},
 		"channel.subscription.gift":    esb.ConditionChannelSubscriptionGift{BroadcasterUserID: ChannelID},
 		"channel.subscription.message": esb.ConditionChannelSubscriptionMessage{BroadcasterUserID: ChannelID},
+		"channel.update":               esb.ConditionChannelUpdate{BroadcasterUserID: ChannelID},
 		"stream.offline":               esb.ConditionStreamOffline{BroadcasterUserID: ChannelID},
 		"stream.online":                esb.ConditionStreamOnline{BroadcasterUserID: ChannelID},
 	}
 	// If nothing is listed, uses "1"
 	var subVersions = map[string]string{
 		"channel.follow": "2",
+		"channel.update": "2",
 	}
 
 	// Get a list of all current eventsub subscriptions, then go down the list unsubscribing anything we don't want
@@ -366,6 +379,9 @@ func main() {
 	}
 
 	// Maybe use these to stop/start the IRC bot sending messages?
+	handler.HandleChannelUpdate = func(h *esb.ResponseHeaders, event *esb.EventChannelUpdate) {
+		ai.SetStreamInfo(event.Title, event.CategoryName)
+	}
 	handler.HandleStreamOnline = func(h *esb.ResponseHeaders, event *esb.EventStreamOnline) {}
 	handler.HandleStreamOffline = func(h *esb.ResponseHeaders, event *esb.EventStreamOffline) {}
 

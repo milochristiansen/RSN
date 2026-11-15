@@ -25,10 +25,11 @@ type AI struct {
 	log  *sessionlogger.Logger
 	send func(string) error
 
-	history   *aiHistory
-	clef      *clefClient
-	deepseek  *deepSeekClient
-	questions map[string]Question
+	history    *aiHistory
+	clef       *clefClient
+	deepseek   *deepSeekClient
+	questions  map[string]Question
+	streamInfo atomic.Pointer[StreamInfo]
 
 	queue     chan ChatMessage
 	stop      chan struct{}
@@ -324,7 +325,7 @@ func (a *AI) process(message ChatMessage) {
 	// stable prefix for prompt caching.
 	transcript := a.history.FormatTranscript(window)
 	systemPrompt := replySystemPrompt
-	userPrompt := transcript
+	userPrompt := buildReplyUserPrompt(a.currentStreamInfo(), transcript)
 
 	replyStarted := time.Now()
 	replyCtx, replyCancel := context.WithTimeout(context.Background(), a.cfg.Reply.Timeout)
